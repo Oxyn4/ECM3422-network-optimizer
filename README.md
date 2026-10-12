@@ -1,2 +1,19 @@
-# ECM3422-maritime-route-optimizer
-Web based simulator of maritime trade, with optimized algorithms. Developed for ECM3422, exeter's undergraduate module: algorithms that changed the world.
+# network-optimizer
+
+## Project Setup
+
+```sh
+npm install
+```
+
+### Compile and Hot-Reload for Development
+
+```sh
+npm run dev
+```
+
+### Compile and Minify for Production
+
+```sh
+npm run build
+```
