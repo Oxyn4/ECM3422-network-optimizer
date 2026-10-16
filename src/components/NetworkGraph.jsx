@@ -18,7 +18,7 @@ function toElements(network) {
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      label: String(edge.capacity),
+      label: String(edge.flow) + ' / ' + String(edge.capacity),
     },
   }))
 
