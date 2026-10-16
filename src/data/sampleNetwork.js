@@ -75,19 +75,29 @@ class FlowNet {
     return false;
   }
 
-  add(connectToId, flow, capacity) {
-    if (!this.exists(connectToId)) return false;
+	add(connectToId, flow, capacity) {
+		if (!this.exists(connectToId)) return null;
 
-    const newNode = new Node(this.nodeGenerator);
-    this.list.set(newNode.id, new Map());
+		const newNode = new Node(this.nodeGenerator);
+		this.list.set(newNode.id, new Map());
 
-    const forward = new Edge(this.edgeGenerator, flow, capacity);
-    const backward = new Edge(this.edgeGenerator, flow, capacity);
+		const forward = new Edge(this.edgeGenerator, flow, capacity);
 
-    this.list.get(connectToId).set(newNode.id, forward);
-    this.list.get(newNode.id).set(connectToId, backward);
-    return true;
-  }
+		this.list.get(connectToId).set(newNode.id, forward);
+
+		return newNode.id;
+	}
+
+	connect(fromId, toId, flow, capacity) {
+		if (!this.exists(fromId) || !this.exists(toId)) return false;
+		if (fromId === toId) return false; // no loops
+
+		const edge = new Edge(this.edgeGenerator, flow, capacity);
+
+		this.list.get(fromId).set(toId, edge);
+
+		return true;
+	}
 
   getConnectedNodes(nodeId) {
     return this.exists(nodeId) ? [...this.list.get(nodeId).keys()] : null;
@@ -98,10 +108,10 @@ class FlowNet {
     const edges = [];
 
     for (const [nodeId, neighbours] of this.list) {
-      nodes.push({ id: nodeId, label: nodeId, x: 500, y: 500 });
+      nodes.push({ id: nodeId, label: nodeId, x: Math.floor(Math.random() * (500 - 1)), y: Math.floor(Math.random() * (500 - 1))});
       for (const [neighbourId, edge] of neighbours) {
         edges.push({
-          id: edge.id,
+          id: `edge-${edge.id}`,
           source: nodeId,
           target: neighbourId,
           flow: edge.flow,
@@ -115,5 +125,13 @@ class FlowNet {
 }
 
 export const sampleNetwork = function() {  
-	return new FlowNet().cytoscape();
+	let net = new FlowNet();
+
+	const b = net.add(net.source, 0, 5);
+
+	const c = net.add(net.source, 0, 5);
+
+	const d = net.add(c, 0, 10);
+
+	return net.cytoscape();
 }
