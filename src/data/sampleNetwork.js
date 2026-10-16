@@ -112,27 +112,97 @@ class FlowNet {
   getConnectedNodes(nodeId) {
     return this.exists(nodeId) ? [...this.list.get(nodeId).keys()] : null;
   }
+	
+	// to positiin the graph we construct cells for each node
+	// edges might overlap. Turns out trying to figure out if a graph is planar (drawable without overlapped edges) is quite difficult TODO
+	positions(count) {
+		const cols = Math.ceil(Math.sqrt(count));
+		const cellSize = 120;   
+		const randomOffset = 40;
 
-  cytoscape() {
-    const nodes = [];
-    const edges = [];
+		const cells = [...Array(count).keys()];
 
-    for (const [nodeId, neighbours] of this.list) {
-      nodes.push({ id: nodeId, label: nodeId, x: Math.floor(Math.random() * (500 - 1)), y: Math.floor(Math.random() * (500 - 1))});
-      for (const [neighbourId, edge] of neighbours) {
-        edges.push({
-          id: `edge-${edge.id}`,
-          source: nodeId,
-          target: neighbourId,
-          flow: edge.flow,
-          capacity: edge.capacity,
-        });
-      }
-    }
+		for (let i = cells.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
 
-    return { source: this.source, sink: this.sink, nodes, edges };
-  }
+			[cells[i], cells[j]] = [cells[j], cells[i]];
+		}
+
+		return cells.map((cell) => ({
+			x: (cell % cols) * cellSize + Math.random() * randomOffset,
+			y: Math.floor(cell / cols) * cellSize + Math.random() * randomOffset,
+		}));
+	}
+
+	cytoscape() {
+		const nodes = [];
+		const edges = [];
+
+		const positions = this.positions(this.list.size);
+		let i = 0;
+
+		for (const [nodeId, neighbours] of this.list) {
+			nodes.push({ id: nodeId, label: nodeId, x: positions[i].x, y: positions[i].y, });
+			i++;
+
+			for (const [neighbourId, edge] of neighbours) {
+				edges.push({
+					id: `edge-${edge.id}`,
+					source: nodeId,
+					target: neighbourId,
+					flow: edge.flow,
+					capacity: edge.capacity,
+				});
+			}
+		}
+
+		return { source: this.source, sink: this.sink, nodes, edges };
+	}
 }
+
+// change rng parameter to recreate specific random examples
+function randomFlowNet(nodeCount = 8, density = 0.25, minCapacity = 1, maxCapacity = 20, rng = Math.random) {
+  if (nodeCount < 2) throw new RangeError("minimum node count is 2");
+
+  const randInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
+
+  const net = new FlowNet();
+
+  for (let i = 1; i < nodeCount; i++) {
+    const existing = [...net.list.keys()];
+    const parent = existing[randInt(0, existing.length - 1)];
+
+    net.add(parent, 0, randInt(minCapacity, maxCapacity));
+  }
+
+  const crossEdges = Math.floor(density * nodeCount);
+  const allIds = [...net.list.keys()];
+
+	for (let i = 0; i < crossEdges; i++) {
+		const fromIdx = randInt(0, allIds.length - 1);
+		const toIdx = randInt(fromIdx + 1, allIds.length - 1);
+
+		const from = allIds[fromIdx];
+		const to = allIds[toIdx];
+
+		if (net.list.get(from).has(to)) continue;
+
+		net.connect(from, to, 0, randInt(minCapacity, maxCapacity));
+	}
+
+  const sinks = allIds.filter((id) => net.list.get(id).size === 0);
+
+  if (sinks.length > 0) {
+    net.setSink(sinks[randInt(0, sinks.length - 1)]);
+  } else {
+    const candidates = allIds.filter((id) => id !== net.source);
+    net.setSink(candidates[randInt(0, candidates.length - 1)]);
+  }
+
+  return net;
+}
+
+export const randomNetwork = new randomFlowNet().cytoscape();
 
 export const sampleNetwork = function() {  
 	let net = new FlowNet();
