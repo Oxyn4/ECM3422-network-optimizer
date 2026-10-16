@@ -75,28 +75,38 @@ class FlowNet {
     return false;
   }
 
-	add(connectToId, flow, capacity) {
-		if (!this.exists(connectToId)) return null;
+	add(connectTo, flow, capacity) {
+		const targets = Array.isArray(connectTo) ? connectTo : [connectTo];
+		if (targets.some((t) => !this.exists(t))) return null;
 
 		const newNode = new Node(this.nodeGenerator);
 		this.list.set(newNode.id, new Map());
 
-		const forward = new Edge(this.edgeGenerator, flow, capacity);
-
-		this.list.get(connectToId).set(newNode.id, forward);
+		for (const target of targets) {
+			const edge = new Edge(this.edgeGenerator, flow, capacity);
+			this.list.get(target).set(newNode.id, edge);
+		}
 
 		return newNode.id;
 	}
 
-	connect(fromId, toId, flow, capacity) {
-		if (!this.exists(fromId) || !this.exists(toId)) return false;
-		if (fromId === toId) return false; // no loops
+	connect(fr, to, flow, capacity) {
+		const sources = Array.isArray(fr) ? fr : [fr];
+		const targets = Array.isArray(to) ? to : [to];
 
-		const edge = new Edge(this.edgeGenerator, flow, capacity);
+		let ok = true;
+		for (const src of sources) {
+			for (const dst of targets) {
+				if (!this.exists(src) || !this.exists(dst) || src === dst) {
+					ok = false;
+					continue;
+				}
+				const edge = new Edge(this.edgeGenerator, flow, capacity);
+				this.list.get(src).set(dst, edge);
+			}
+		}
 
-		this.list.get(fromId).set(toId, edge);
-
-		return true;
+		return ok;
 	}
 
   getConnectedNodes(nodeId) {
@@ -131,7 +141,9 @@ export const sampleNetwork = function() {
 
 	const c = net.add(net.source, 0, 5);
 
-	const d = net.add(c, 0, 10);
+	const d = net.add([b, c], 0, 10);
+
+	net.setSink(d);
 
 	return net.cytoscape();
 }
