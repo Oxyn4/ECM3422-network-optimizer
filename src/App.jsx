@@ -7,7 +7,7 @@ function App() {
     <main className="app">
       <h1>Network Optimizer</h1>
       <p>Edmonds-Karp max-flow visualiser (sample network)</p>
-      <NetworkGraph network={sampleNetwork} />
+      <NetworkGraph network={sampleNetwork()} />
     </main>
   )
 }
