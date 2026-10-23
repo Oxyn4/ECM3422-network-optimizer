@@ -1,13 +1,104 @@
 .app {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
 }
 
+/* graph on the left, controls on the right; stacks on narrow screens */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .network-graph {
+  overflow: hidden;
   width: 100%;
-  height: 480px;
+  height: 560px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-panel section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.control-panel h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  color: var(--text-h);
+}
+
+.control-panel p {
+  margin: 0 0 8px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edge-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.edge-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.control-panel input,
+.control-panel select,
+.control-panel button {
+  font: inherit;
+  padding: 4px 8px;
+}
+
+.control-panel input[type='number'] {
+  width: 80px;
+}
+
+.control-panel button.primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+.control-panel button.danger {
+  color: #dc2626;
+}
+
+.hint {
+  color: var(--text);
+  font-style: italic;
+}
+
+.error {
+  color: #dc2626;
+}
+
+.result {
+  margin-top: 8px;
 }
