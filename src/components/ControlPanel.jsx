@@ -1,6 +1,8 @@
 
 import { useState } from 'react'
 
+import { BfsPanel } from './bfsPanel'
+
 // side panel for editing the network and running the algorithm
 function ControlPanel({
   network,
@@ -17,6 +19,7 @@ function ControlPanel({
   onSetSource,
   onSetSink,
   onRun,
+  onBFS
 }) {
   // keep track of the starting node chosen in the edge form
   const [edgeSource, setEdgeSource] = useState('')
@@ -200,7 +203,7 @@ function ControlPanel({
           <p className="hint">Click a node or edge to edit it</p>
         )}
       </section>
-
+      <BfsPanel />
       <section>
         <h2>Max flow</h2>
         <p>

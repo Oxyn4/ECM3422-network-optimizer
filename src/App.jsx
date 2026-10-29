@@ -41,6 +41,14 @@ function App() {
     changeNetwork(next)
     setSelection(null)
   }
+
+  const [isBFSStarted, startBFS] = useState(true);
+
+  function runBFS() {
+    startBFS(current => !current);
+
+    console.log("run BFS");
+  }
   
   function runMaxFlow() {
     const problem = checkReadyToRun(network)
@@ -96,6 +104,7 @@ function App() {
           onSetSource={(nodeId) => changeNetwork(setSource(network, nodeId))}
           onSetSink={(nodeId) => changeNetwork(setSink(network, nodeId))}
           onRun={runMaxFlow}
+          onBFS={runBFS}
         />
       </div>
     </main>
