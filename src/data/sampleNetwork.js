@@ -89,6 +89,22 @@ export class FlowNet {
     }
   }
 
+  allEdges() {
+    const result = [];
+    for (const [source, neighbours] of this.list) {
+      for (const [target, edge] of neighbours) {
+        result.push({
+          id: `edge-${edge.id}`,
+          source,
+          target,
+          flow: edge.flow,
+          capacity: edge.capacity,
+        });
+      }
+    }
+    return result;
+  }
+
   exists(nodeId) {
     return this.list.has(nodeId);
   }
