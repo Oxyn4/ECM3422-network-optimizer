@@ -19,7 +19,7 @@ function ControlPanel({
   onSetSource,
   onSetSink,
   onRun,
-  onBFS
+  onHighlight,
 }) {
   // keep track of the starting node chosen in the edge form
   const [edgeSource, setEdgeSource] = useState('')
@@ -203,7 +203,7 @@ function ControlPanel({
           <p className="hint">Click a node or edge to edit it</p>
         )}
       </section>
-      <BfsPanel />
+      <BfsPanel network={network} onHighlight={onHighlight} />
       <section>
         <h2>Max flow</h2>
         <p>

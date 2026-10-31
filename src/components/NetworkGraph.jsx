@@ -1,26 +1,33 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 import cytoscape from 'cytoscape'
 
-// turns the network data into elements for cytoscape
-function toElements(network, selection) {
+function toElements(network, selection, highlight = null) {
   const isSelected = (kind, id) => selection?.kind === kind && selection.id === id
+  const isHighlighted = (kind, id) => {
+    if (!highlight) return false
+    if (highlight.kind === 'both') {
+      return kind === 'node'
+        ? highlight.nodeIds?.includes(id)
+        : kind === 'edge'
+        ? highlight.edgeIds?.includes(id)
+        : false
+    }
+    // legacy: single kind with ids array
+    return highlight.kind === kind && highlight.ids?.includes(id)
+  }
 
-  // create the nodes and set their positions and colours
   const nodes = network.nodes.map((node) => {
     const classes = []
     if (node.id === network.source) classes.push('source')
     if (node.id === network.sink) classes.push('sink')
     if (isSelected('node', node.id)) classes.push('selected')
+    if (isHighlighted('node', node.id)) classes.push('highlighted')
 
     return {
       data: { id: node.id, label: node.label },
       position: { x: node.x, y: node.y },
-      classes,
-    }
-  })
+    if (isHighlighted('edge', edge.id)) classes.push('highlighted')
 
-  // create the edges and show their flow and capacity
-  const edges = network.edges.map((edge) => ({
     data: {
       id: edge.id,
       source: edge.source,

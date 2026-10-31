@@ -21,6 +21,7 @@ import './App.css'
 function App() {
   const [network, setNetwork] = useState(() => makeRandomNetwork())
   const [selection, setSelection] = useState(null) // { kind: 'node' | 'edge', id } or null
+  const [highlight, setHighlight] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
 
@@ -29,6 +30,7 @@ function App() {
     setNetwork(resetFlows(next))
     setResult(null)
     setError('')
+    setHighlight(null)
   }
 
   // edits that can be refused return { error } 
@@ -79,6 +81,7 @@ function App() {
         <NetworkGraph
           network={network}
           selection={selection}
+          highlight={highlight}
           onSelect={setSelection}
           // moving a node doesn't change the flows, so keep the result
           onNodeMove={(nodeId, position) => setNetwork((current) => moveNode(current, nodeId, position))}
@@ -104,7 +107,7 @@ function App() {
           onSetSource={(nodeId) => changeNetwork(setSource(network, nodeId))}
           onSetSink={(nodeId) => changeNetwork(setSink(network, nodeId))}
           onRun={runMaxFlow}
-          onBFS={runBFS}
+          onHighlight={setHighlight}
         />
       </div>
     </main>
