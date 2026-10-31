@@ -1,6 +1,8 @@
 import { useState } from "react";
 
-export function BfsPanel() {
+import { BFS } from '../algorithm/ek.js';
+
+export function BfsPanel({ network, onHighlight }) {
     const [isActive, setIsActive] = useState(false);
 
     function startBFS() {
