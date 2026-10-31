@@ -79,6 +79,11 @@ class FlowNet {
     return [...this.list.keys()];
   }
 
+  edges(nodeId) {
+    return [...this.list.get(nodeId).keys()];
+  }
+
+
   exists(nodeId) {
     return this.list.has(nodeId);
   }
