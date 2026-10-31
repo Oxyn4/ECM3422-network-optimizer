@@ -52,7 +52,7 @@ class Edge {
   }
 }
 
-class FlowNet {
+export class FlowNet {
   constructor() {
     this.nodeGenerator = letters();
     this.edgeGenerator = letters();
