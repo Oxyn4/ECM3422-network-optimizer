@@ -130,6 +130,10 @@ class FlowNet {
 		return ok;
 	}
 
+  getEdge(nodeId, edgeId) {
+    return this.list.get(nodeId).get(edgeId);
+	}
+
   getConnectedNodes(nodeId) {
     return this.exists(nodeId) ? [...this.list.get(nodeId).keys()] : null;
   }
