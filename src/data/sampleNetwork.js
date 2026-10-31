@@ -147,6 +147,10 @@ class FlowNet {
 		return true;
 	}
 
+	removeEdge(sourceId, targetId) {
+		return this.exists(sourceId) ? this.list.get(sourceId).delete(targetId) : false;
+	}
+
 	}
 	}
 
