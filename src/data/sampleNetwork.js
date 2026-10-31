@@ -101,6 +101,12 @@ class FlowNet {
     return false;
   }
 
+	addNode() {
+		const newNode = new Node(this.nodeGenerator);
+		this.list.set(newNode.id, new Map());
+		return newNode.id;
+  }
+
 	add(connectTo, flow, capacity) {
 		const targets = Array.isArray(connectTo) ? connectTo : [connectTo];
 		if (targets.some((t) => !this.exists(t))) return null;
