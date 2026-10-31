@@ -67,6 +67,14 @@ class FlowNet {
     return this.list.size;
   }
 
+  edgeCount() {
+    let total = 0;
+    for (let [key, value] of this.list) {
+      total += value.size;
+    }
+    return total;
+  }
+
   exists(nodeId) {
     return this.list.has(nodeId);
   }
