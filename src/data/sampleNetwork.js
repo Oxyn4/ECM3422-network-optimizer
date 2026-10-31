@@ -83,6 +83,11 @@ class FlowNet {
     return [...this.list.get(nodeId).keys()];
   }
 
+  findEdge(edgeId) {
+    for (const inner of this.list.values()) {
+      if (inner.has(edgeId)) return inner;
+    }
+  }
 
   exists(nodeId) {
     return this.list.has(nodeId);
