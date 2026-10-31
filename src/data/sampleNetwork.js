@@ -75,6 +75,10 @@ class FlowNet {
     return total;
   }
 
+  nodes() {
+    return [...this.list.keys()];
+  }
+
   exists(nodeId) {
     return this.list.has(nodeId);
   }
