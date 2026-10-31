@@ -63,6 +63,10 @@ class FlowNet {
     this.sink = null;
   }
 
+  count() {
+    return this.list.size;
+  }
+
   exists(nodeId) {
     return this.list.has(nodeId);
   }
