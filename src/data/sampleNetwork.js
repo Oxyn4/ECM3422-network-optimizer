@@ -138,25 +138,16 @@ class FlowNet {
     return this.exists(nodeId) ? [...this.list.get(nodeId).keys()] : null;
   }
 	
-	// to positiin the graph we construct cells for each node
-	// edges might overlap. Turns out trying to figure out if a graph is planar (drawable without overlapped edges) is quite difficult TODO
-	positions(count) {
-		const cols = Math.ceil(Math.sqrt(count));
-		const cellSize = 120;   
-		const randomOffset = 40;
+	removeNode(nodeId) {
+		if (!this.exists(nodeId) || nodeId === this.source) return false;
+		this.list.delete(nodeId);
+		this.nodePositions.delete(nodeId);
+		for (const neighbours of this.list.values()) neighbours.delete(nodeId);
+		if (this.sink === nodeId) this.sink = null;
+		return true;
+	}
 
-		const cells = [...Array(count).keys()];
-
-		for (let i = cells.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-
-			[cells[i], cells[j]] = [cells[j], cells[i]];
-		}
-
-		return cells.map((cell) => ({
-			x: (cell % cols) * cellSize + Math.random() * randomOffset,
-			y: Math.floor(cell / cols) * cellSize + Math.random() * randomOffset,
-		}));
+	}
 	}
 
 	cytoscape() {
