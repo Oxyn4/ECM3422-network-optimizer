@@ -207,13 +207,15 @@ export class FlowNet {
 	}
 }
 
-// change rng parameter to recreate specific random examples
-function randomFlowNet(nodeCount = 8, density = 0.25, minCapacity = 1, maxCapacity = 20, rng = Math.random) {
-  if (nodeCount < 2) throw new RangeError("minimum node count is 2");
-
+function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 3, rng = Math.random) {
   const randInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 
-  const net = new FlowNet();
+  let net;
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  do {
+    net = new FlowNet();
 
   for (let i = 1; i < nodeCount; i++) {
     const existing = [...net.list.keys()];
@@ -239,11 +241,31 @@ function randomFlowNet(nodeCount = 8, density = 0.25, minCapacity = 1, maxCapaci
 
   const sinks = allIds.filter((id) => net.list.get(id).size === 0);
 
+    let selectedSink = null;
   if (sinks.length > 0) {
-    net.setSink(sinks[randInt(0, sinks.length - 1)]);
-  } else {
+      const validSinks = sinks.filter(s => bfsDistance(net, net.source, s) > minimumBetween);
+      if (validSinks.length > 0) {
+        selectedSink = validSinks[randInt(0, validSinks.length - 1)];
+      }
+    }
+
+    if (!selectedSink) {
     const candidates = allIds.filter((id) => id !== net.source);
-    net.setSink(candidates[randInt(0, candidates.length - 1)]);
+      const validCandidates = candidates.filter(c => bfsDistance(net, net.source, c) > minimumBetween);
+      if (validCandidates.length > 0) {
+        selectedSink = validCandidates[randInt(0, validCandidates.length - 1)];
+      }
+    }
+
+    if (selectedSink) {
+      net.setSink(selectedSink);
+    }
+
+    attempts++;
+  } while ((!net.sink || bfsDistance(net, net.source, net.sink) <= minimumBetween) && attempts < maxAttempts);
+
+  if (!net.sink || bfsDistance(net, net.source, net.sink) <= minimumBetween) {
+    throw new Error(`Could not generate network with minimumBetween=${minimumBetween} after ${maxAttempts} attempts`);
   }
 
   return net;
