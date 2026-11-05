@@ -32,6 +32,7 @@ export class FlowNet {
     this.nodeGenerator = letters();
     this.edgeGenerator = letters();
     this.list = new Map();
+this.nodePositions = new Map();
     const source = new Node(this.nodeGenerator);
     this.list.set(source.id, new Map());
     this.source = source.id;
@@ -151,6 +152,27 @@ export class FlowNet {
 
 	removeEdge(sourceId, targetId) {
 		return this.exists(sourceId) ? this.list.get(sourceId).delete(targetId) : false;
+	}
+
+	setCapacity(sourceId, targetId, capacity) {
+		const edge = this.list.get(sourceId)?.get(targetId);
+		if (!edge) return false;
+		edge.capacity = capacity;
+		return true;
+	}
+
+	setNodePosition(nodeId, position) {
+		if (!this.exists(nodeId)) return false;
+		this.nodePositions.set(nodeId, position);
+		return true;
+	}
+
+	clearFlows() {
+		for (const neighbours of this.list.values()) {
+			for (const edge of neighbours.values()) {
+				edge.flow = 0;
+			}
+		}
 	}
 
 	}
