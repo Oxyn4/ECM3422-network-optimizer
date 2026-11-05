@@ -175,19 +175,146 @@ this.nodePositions = new Map();
 		}
 	}
 
+  static NODE_CLEARANCE = 40
+  static GRID_SPACING = 140
+
+  static segmentsCross(a, b, c, d) {
+    // this lamda for which side does p->q fall on
+    const ccw = (p, q, r) => (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
+    return (ccw(a, b, c) * ccw(a, b, d) < 0) && (ccw(c, d, a) * ccw(c, d, b) < 0)
+  }
+
+  crossingCount(from, fromPos, to, toPos, placed) {
+    let count = 0
+    const newSeg = { a: fromPos, b: toPos }
+
+    for (const [u, pu] of placed) {
+      for (const [v, pv] of placed) {
+        if (u === v || !this.isAdjacent(u, v)) continue
+        if (u === from || u === to || v === from || v === to) continue
+        if (FlowNet.segmentsCross(newSeg.a, newSeg.b, pu, pv)) count++
+      }
+    }
+    return count
+  }
+
+  isAdjacent(a, b) {
+    return this.list.get(a)?.has(b) || this.list.get(b)?.has(a)
+  }
+
+  degree(nodeId) {
+    let d = this.list.get(nodeId).size
+    for (const neighbours of this.list.values()) {
+      if (neighbours.has(nodeId)) d++
+    }
+    return d
+  }
+
+  static segmentDistance(p, a, b) {
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const lenSq = dx * dx + dy * dy
+    if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y)
+    let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq
+    t = Math.max(0, Math.min(1, t))
+    return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+  }
+
+  collisionScore(nodeId, pos, placed) {
+    let score = 0
+
+    for (const [a, pa] of placed) {
+      for (const [b, pb] of placed) {
+        if (a === b || !this.isAdjacent(a, b)) continue
+        if (FlowNet.segmentDistance(pos, pa, pb) < FlowNet.NODE_CLEARANCE) score++
+      }
+    }
+
+    for (const [m, pm] of placed) {
+      if (!this.isAdjacent(nodeId, m)) continue
+      for (const [o, po] of placed) {
+        if (o === m || o === nodeId) continue
+        if (FlowNet.segmentDistance(po, pos, pm) < FlowNet.NODE_CLEARANCE) score++
+      }
+    }
+    return score
+  }
+
+  layoutScore(nodeId, pos, placed) {
+    let score = this.collisionScore(nodeId, pos, placed)
+
+    for (const [neighbor, neighborPos] of placed) {
+      if (!this.isAdjacent(nodeId, neighbor)) continue
+      score += this.crossingCount(nodeId, pos, neighbor, neighborPos, placed)
+    }
+
+    return score
+  }
+
+  *candidateCells(count) {
+    const s = FlowNet.GRID_SPACING
+    const cols = Math.ceil(Math.sqrt(count))
+    const cells = []
+    for (let i = 0; i < count; i++) {
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const stagger = row % 2 === 1 ? s / 2 : 0
+      cells.push({ x: col * s + stagger, y: row * s })
+    }
+    yield* cells
+    for (const c of cells) {
+      for (const [ox, oy] of [[s/2,-s/2],[s/2,s/2],[-s/2,s/2],[-s/2,-s/2],[0,-s*0.75],[0,s*0.75]]) {
+        yield { x: c.x + ox, y: c.y + oy }
+      }
+    }
+  }
+
+  placeUnplaced() {
+    const placed = new Map(
+      [...this.nodePositions].filter(([id]) => this.exists(id))
+    )
+    const unplaced = this.nodes()
+      .filter((id) => !placed.has(id))
+      .sort((a, b) => this.degree(b) - this.degree(a))
+
+    for (const id of unplaced) {
+      let best = null
+      let bestScore = Infinity
+      for (const cell of this.candidateCells(this.list.size + 4)) {
+        let tooClose = false
+        for (const p of placed.values()) {
+          if (Math.hypot(p.x - cell.x, p.y - cell.y) < FlowNet.GRID_SPACING * 0.7) {
+            tooClose = true
+            break
+          }
+        }
+        if (tooClose) continue
+
+        const score = this.layoutScore(id, cell, placed)
+        if (score === 0) {
+          best = cell
+          break
+        }
+        if (score < bestScore) {
+          best = cell
+          bestScore = score
+        }
+      }
+      const pos = best ?? { x: 0, y: FlowNet.GRID_SPACING * Math.ceil(Math.sqrt(this.list.size + 4) + 2) }
+      this.nodePositions.set(id, pos)
+      placed.set(id, pos)
 	}
 	}
 
 	cytoscape() {
-		const nodes = [];
-		const edges = [];
+    const nodes = []
+    const edges = []
 
-		const positions = this.positions(this.list.size);
-		let i = 0;
+    this.placeUnplaced()
 
 		for (const [nodeId, neighbours] of this.list) {
-			nodes.push({ id: nodeId, label: nodeId, x: positions[i].x, y: positions[i].y, });
-			i++;
+      const position = this.nodePositions.get(nodeId)
+      nodes.push({ id: nodeId, label: nodeId, x: position.x, y: position.y })
 
 			for (const [neighbourId, edge] of neighbours) {
 				edges.push({
@@ -196,7 +323,26 @@ this.nodePositions = new Map();
 					target: neighbourId,
 					flow: edge.flow,
 					capacity: edge.capacity,
-				});
+        })
+      }
+    }
+
+    const byId = new Map(nodes.map((n) => [n.id, n]))
+    for (const e of edges) {
+      const a = byId.get(e.source)
+      const b = byId.get(e.target)
+      e.midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    }
+
+    const OFFSET_STEP = 4
+    for (let i = 0; i < edges.length; i++) {
+      for (let j = i + 1; j < edges.length; j++) {
+        const e1 = edges[i]
+        const e2 = edges[j]
+        if (Math.hypot(e1.midpoint.x - e2.midpoint.x, e1.midpoint.y - e2.midpoint.y) < 15) {
+          e1.offset = (e1.offset ?? 0) + OFFSET_STEP
+          e2.offset = (e2.offset ?? 0) - OFFSET_STEP
+        }
 			}
 		}
 
