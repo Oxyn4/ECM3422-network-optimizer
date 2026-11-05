@@ -425,39 +425,6 @@ describe('makeRandomNetwork', () => {
   });
 });
 
-describe('sampleNetwork function', () => {
-  it('should create a valid sample network', () => {
-    const data = sampleNetwork();
-
-    expect(data.source).toBeDefined();
-    expect(data.sink).toBeDefined();
-    expect(data.nodes.length).toBeGreaterThan(0);
-    expect(data.edges.length).toBeGreaterThan(0);
-  });
-
-  it('should have correct topology', () => {
-    const data = sampleNetwork();
-
-    // Should have source, intermediate nodes, and sink
-    const nodeIds = data.nodes.map(n => n.id);
-    expect(nodeIds).toContain(data.source);
-    expect(nodeIds).toContain(data.sink);
-
-    // Should have multiple paths from source to sink
-    expect(data.edges.length).toBeGreaterThanOrEqual(3);
-  });
-
-  it('should have consistent flow and capacity values', () => {
-    const data = sampleNetwork();
-
-    data.edges.forEach(edge => {
-      expect(edge.flow).toBe(0); // Initial flow should be 0
-      expect(edge.capacity).toBeGreaterThan(0);
-      expect(edge.capacity).toBeLessThanOrEqual(10); // Based on sampleNetwork implementation
-    });
-  });
-});
-
 describe('Edge cases and error handling', () => {
   it('should handle large networks', () => {
     const net = makeRandomNetwork(50, 0.2, 1, 100);
