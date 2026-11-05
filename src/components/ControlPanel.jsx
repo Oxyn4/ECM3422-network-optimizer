@@ -1,7 +1,8 @@
 
 import { useState } from 'react'
 
-import { BfsPanel } from './bfsPanel'
+import { BfsPanel } from './panels/BfsPanel'
+import { EdmondsKarpPanel } from './panels/EdmondsKarpPanel'
 
 // side panel for editing the network and running the algorithm
 function ControlPanel({
