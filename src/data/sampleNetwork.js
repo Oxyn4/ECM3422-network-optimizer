@@ -439,20 +439,4 @@ function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapac
   return net;
 }
 
-export const randomNetwork = new randomFlowNet().cytoscape();
-// builds a fresh random network each time it is called (for the "Random network" button)
-export const makeRandomNetwork = (...options) => randomFlowNet(...options).cytoscape();
-
-export const sampleNetwork = function() {  
-	let net = new FlowNet();
-
-	const b = net.add(net.source, 0, 5);
-
-	const c = net.add(net.source, 0, 5);
-
-	const d = net.add([b, c], 0, 10);
-
-	net.setSink(d);
-
-	return net.cytoscape();
-}
+export const makeRandomNetwork = (...options) => randomFlowNet(...options);
