@@ -346,8 +346,33 @@ this.nodePositions = new Map();
 			}
 		}
 
-		return { source: this.source, sink: this.sink, nodes, edges };
+    return { source: this.source, sink: this.sink, nodes, edges }
+  }
+}
+
+function bfsDistance(net, start, end) {
+  if (!net.exists(start) || !net.exists(end)) return Infinity;
+  if (start === end) return 0;
+
+  const visited = new Set([start]);
+  const queue = [[start, 0]];
+
+  while (queue.length > 0) {
+    const [current, dist] = queue.shift();
+    const neighbors = net.getConnectedNodes(current);
+
+    if (!neighbors) continue;
+
+    for (const neighbor of neighbors) {
+      if (neighbor === end) return dist + 1;
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push([neighbor, dist + 1]);
 	}
+    }
+  }
+
+  return Infinity;
 }
 
 function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 3, rng = Math.random) {
