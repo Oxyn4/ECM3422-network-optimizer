@@ -32,7 +32,7 @@ export class FlowNet {
     this.nodeGenerator = letters();
     this.edgeGenerator = letters();
     this.list = new Map();
-this.nodePositions = new Map();
+    this.nodePositions = new Map();
     const source = new Node(this.nodeGenerator);
     this.list.set(source.id, new Map());
     this.source = source.id;
@@ -97,7 +97,7 @@ this.nodePositions = new Map();
 		const newNode = new Node(this.nodeGenerator);
 		this.list.set(newNode.id, new Map());
 		return newNode.id;
-  }
+	}
 
 	add(connectTo, flow, capacity) {
 		const targets = Array.isArray(connectTo) ? connectTo : [connectTo];
@@ -135,12 +135,12 @@ this.nodePositions = new Map();
 
   getEdge(nodeId, edgeId) {
     return this.list.get(nodeId).get(edgeId);
-	}
+  }
 
   getConnectedNodes(nodeId) {
     return this.exists(nodeId) ? [...this.list.get(nodeId).keys()] : null;
   }
-	
+
 	removeNode(nodeId) {
 		if (!this.exists(nodeId) || nodeId === this.source) return false;
 		this.list.delete(nodeId);
@@ -179,7 +179,6 @@ this.nodePositions = new Map();
   static GRID_SPACING = 140
 
   static segmentsCross(a, b, c, d) {
-    // this lamda for which side does p->q fall on
     const ccw = (p, q, r) => (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
     return (ccw(a, b, c) * ccw(a, b, d) < 0) && (ccw(c, d, a) * ccw(c, d, b) < 0)
   }
@@ -303,26 +302,26 @@ this.nodePositions = new Map();
       const pos = best ?? { x: 0, y: FlowNet.GRID_SPACING * Math.ceil(Math.sqrt(this.list.size + 4) + 2) }
       this.nodePositions.set(id, pos)
       placed.set(id, pos)
-	}
-	}
+    }
+  }
 
-	cytoscape() {
+  cytoscape() {
     const nodes = []
     const edges = []
 
     this.placeUnplaced()
 
-		for (const [nodeId, neighbours] of this.list) {
+    for (const [nodeId, neighbours] of this.list) {
       const position = this.nodePositions.get(nodeId)
       nodes.push({ id: nodeId, label: nodeId, x: position.x, y: position.y })
 
-			for (const [neighbourId, edge] of neighbours) {
-				edges.push({
-					id: `edge-${edge.id}`,
-					source: nodeId,
-					target: neighbourId,
-					flow: edge.flow,
-					capacity: edge.capacity,
+      for (const [neighbourId, edge] of neighbours) {
+        edges.push({
+          id: `edge-${edge.id}`,
+          source: nodeId,
+          target: neighbourId,
+          flow: edge.flow,
+          capacity: edge.capacity,
         })
       }
     }
@@ -343,8 +342,8 @@ this.nodePositions = new Map();
           e1.offset = (e1.offset ?? 0) + OFFSET_STEP
           e2.offset = (e2.offset ?? 0) - OFFSET_STEP
         }
-			}
-		}
+      }
+    }
 
     return { source: this.source, sink: this.sink, nodes, edges }
   }
@@ -368,14 +367,14 @@ function bfsDistance(net, start, end) {
       if (!visited.has(neighbor)) {
         visited.add(neighbor);
         queue.push([neighbor, dist + 1]);
-	}
+      }
     }
   }
 
   return Infinity;
 }
 
-function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 3, rng = Math.random) {
+function randomFlowNet(nodeCount = 30, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 5, rng = Math.random) {
   const randInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 
   let net;
@@ -385,32 +384,32 @@ function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapac
   do {
     net = new FlowNet();
 
-  for (let i = 1; i < nodeCount; i++) {
-    const existing = [...net.list.keys()];
-    const parent = existing[randInt(0, existing.length - 1)];
+    for (let i = 1; i < nodeCount; i++) {
+      const existing = [...net.list.keys()];
+      const parent = existing[randInt(0, existing.length - 1)];
 
-    net.add(parent, 0, randInt(minCapacity, maxCapacity));
-  }
+      net.add(parent, 0, randInt(minCapacity, maxCapacity));
+    }
 
-  const crossEdges = Math.floor(density * nodeCount);
-  const allIds = [...net.list.keys()];
+    const crossEdges = Math.floor(density * nodeCount);
+    const allIds = [...net.list.keys()];
 
-	for (let i = 0; i < crossEdges; i++) {
-		const fromIdx = randInt(0, allIds.length - 1);
-		const toIdx = randInt(fromIdx + 1, allIds.length - 1);
+    for (let i = 0; i < crossEdges; i++) {
+      const fromIdx = randInt(0, allIds.length - 1);
+      const toIdx = randInt(fromIdx + 1, allIds.length - 1);
 
-		const from = allIds[fromIdx];
-		const to = allIds[toIdx];
+      const from = allIds[fromIdx];
+      const to = allIds[toIdx];
 
-		if (net.list.get(from).has(to)) continue;
+      if (net.list.get(from).has(to)) continue;
 
-		net.connect(from, to, 0, randInt(minCapacity, maxCapacity));
-	}
+      net.connect(from, to, 0, randInt(minCapacity, maxCapacity));
+    }
 
-  const sinks = allIds.filter((id) => net.list.get(id).size === 0);
+    const sinks = allIds.filter((id) => net.list.get(id).size === 0);
 
     let selectedSink = null;
-  if (sinks.length > 0) {
+    if (sinks.length > 0) {
       const validSinks = sinks.filter(s => bfsDistance(net, net.source, s) > minimumBetween);
       if (validSinks.length > 0) {
         selectedSink = validSinks[randInt(0, validSinks.length - 1)];
@@ -418,7 +417,7 @@ function randomFlowNet(nodeCount = 12, density = 0.25, minCapacity = 1, maxCapac
     }
 
     if (!selectedSink) {
-    const candidates = allIds.filter((id) => id !== net.source);
+      const candidates = allIds.filter((id) => id !== net.source);
       const validCandidates = candidates.filter(c => bfsDistance(net, net.source, c) > minimumBetween);
       if (validCandidates.length > 0) {
         selectedSink = validCandidates[randInt(0, validCandidates.length - 1)];
