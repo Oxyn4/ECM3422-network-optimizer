@@ -160,3 +160,47 @@ export function edmondsKarp(network) {
         }, {}),
     };
 }
+
+function pathHighlights(path) {
+    const nodeIds = [];
+    const edgeIds = [];
+    for (const hop of path) {
+        if (!nodeIds.includes(hop.from)) nodeIds.push(hop.from);
+        if (!nodeIds.includes(hop.to)) nodeIds.push(hop.to);
+        edgeIds.push(`edge-${hop.edge.id}`);
+    }
+    return { nodeIds, edgeIds };
+}
+
+export function edmondsKarpTrace(network) {
+    if (!network.source || !network.sink) return [];
+
+    network.clearFlows();
+
+    const steps = [];
+    let maxFlow = 0;
+
+    while (true) {
+        const result = findAugmentingPath(network, {});
+        if (!result) break;
+
+        for (const { type, edge } of result.path) {
+            if (type === 'forward') {
+                edge.flow += result.bottleneck;
+            } else {
+                edge.flow -= result.bottleneck;
+            }
+        }
+
+        maxFlow += result.bottleneck;
+        steps.push({
+            path: result.path,
+            ...pathHighlights(result.path),
+            bottleneck: result.bottleneck,
+            maxFlow,
+        });
+    }
+
+    network.clearFlows();
+    return steps;
+}
