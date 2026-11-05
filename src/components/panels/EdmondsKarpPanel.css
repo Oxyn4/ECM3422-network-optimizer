@@ -1,0 +1,51 @@
+.ek-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.ek-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  margin: 2px 0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: default;
+  opacity: 0.35;
+}
+
+.ek-item.revealed {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.ek-item.current {
+  font-weight: 700;
+  background: var(--pc-active, transparent);
+}
+
+.ek-item.revealed:hover {
+  background: var(--pc-hover, transparent);
+}
+
+.ek-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--pc, #999);
+}
+
+.ek-item.current .ek-swatch {
+  box-shadow: 0 0 0 2px var(--pc-glow, transparent);
+}
+
+.ek-item.pc-0 { --pc: #ef4444; --pc-hover: #ef444433; --pc-active: #ef44441a; --pc-glow: #ef444466; }
+.ek-item.pc-1 { --pc: #3b82f6; --pc-hover: #3b82f633; --pc-active: #3b82f61a; --pc-glow: #3b82f666; }
+.ek-item.pc-2 { --pc: #22c55e; --pc-hover: #22c55e33; --pc-active: #22c55e1a; --pc-glow: #22c55e66; }
+.ek-item.pc-3 { --pc: #a855f7; --pc-hover: #a855f733; --pc-active: #a855f71a; --pc-glow: #a855f766; }
+.ek-item.pc-4 { --pc: #ec4899; --pc-hover: #ec489933; --pc-active: #ec48991a; --pc-glow: #ec489966; }
+.ek-item.pc-5 { --pc: #14b8a6; --pc-hover: #14b8a633; --pc-active: #14b8a61a; --pc-glow: #14b8a666; }

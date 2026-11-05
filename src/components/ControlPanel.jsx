@@ -1,14 +1,12 @@
-
 import { useState } from 'react'
 
-// side panel for editing the network and running the algorithm
+import { BfsPanel } from './panels/BfsPanel'
+import { EdmondsKarpPanel } from './panels/EdmondsKarpPanel'
+
 function ControlPanel({
   network,
   selection,
-  result,
-  error,
   onRandom,
-  onSample,
   onAddNode,
   onAddEdge,
   onUpdateCapacity,
@@ -16,49 +14,40 @@ function ControlPanel({
   onRemoveEdge,
   onSetSource,
   onSetSink,
-  onRun,
+  onHighlight,
+  onFlowChanged,
 }) {
-  // keep track of the starting node chosen in the edge form
   const [edgeSource, setEdgeSource] = useState('')
 
-  // find the selected node or edge in the current network
-  const selectedNode =
-    selection?.kind === 'node'
-      ? network.nodes.find((node) => node.id === selection.id)
+  const selectedNodeId =
+    selection?.kind === 'node' && network.exists(selection.id)
+      ? selection.id
       : null
 
   const selectedEdge =
     selection?.kind === 'edge'
-      ? network.edges.find((edge) => edge.id === selection.id)
+      ? network.allEdges().find((edge) => edge.id === selection.id)
       : null
 
-  // read the form values when adding an edge
   function submitEdge(event) {
     event.preventDefault()
 
     const form = new FormData(event.currentTarget)
     const source = form.get('from')
     const target = form.get('to')
-    const capacity = form.get('capacity')
+    const capacity = Number(form.get('capacity'))
 
     onAddEdge(source, target, capacity)
   }
 
-  // update the capacity of the selected edge
   function submitCapacity(event) {
     event.preventDefault()
 
     if (!selectedEdge) return
 
     const form = new FormData(event.currentTarget)
-    onUpdateCapacity(selectedEdge.id, form.get('capacity'))
+    onUpdateCapacity(selectedEdge.id, Number(form.get('capacity')))
   }
-
-  // only allow the algorithm to run when the network has the basics it needs
-  const canRun =
-    network.source &&
-    network.sink &&
-    network.edges.length > 0
 
   return (
     <aside className="control-panel">
@@ -67,9 +56,6 @@ function ControlPanel({
         <div className="button-row">
           <button type="button" onClick={onRandom}>
             Random network
-          </button>
-          <button type="button" onClick={onSample}>
-            Sample network
           </button>
           <button type="button" onClick={onAddNode}>
             Add node
@@ -91,9 +77,9 @@ function ControlPanel({
               <option value="" disabled>
                 Choose node
               </option>
-              {network.nodes.map((node) => (
-                <option key={node.id} value={node.id}>
-                  {node.label}
+              {network.nodes().map((nodeId) => (
+                <option key={nodeId} value={nodeId}>
+                  {nodeId}
                 </option>
               ))}
             </select>
@@ -105,13 +91,13 @@ function ControlPanel({
               <option value="" disabled>
                 Choose node
               </option>
-              {network.nodes.map((node) => (
+              {network.nodes().map((nodeId) => (
                 <option
-                  key={node.id}
-                  value={node.id}
-                  disabled={node.id === edgeSource}
+                  key={nodeId}
+                  value={nodeId}
+                  disabled={nodeId === edgeSource}
                 >
-                  {node.label}
+                  {nodeId}
                 </option>
               ))}
             </select>
@@ -136,26 +122,26 @@ function ControlPanel({
       <section>
         <h2>Selected</h2>
 
-        {selectedNode && (
+        {selectedNodeId && (
           <>
-            <p>Node {selectedNode.label}</p>
+            <p>Node {selectedNodeId}</p>
             <div className="button-row">
               <button
                 type="button"
-                onClick={() => onSetSource(selectedNode.id)}
+                onClick={() => onSetSource(selectedNodeId)}
               >
                 Set as source
               </button>
               <button
                 type="button"
-                onClick={() => onSetSink(selectedNode.id)}
+                onClick={() => onSetSink(selectedNodeId)}
               >
                 Set as sink
               </button>
               <button
                 type="button"
                 className="danger"
-                onClick={() => onRemoveNode(selectedNode.id)}
+                onClick={() => onRemoveNode(selectedNodeId)}
               >
                 Delete node
               </button>
@@ -168,8 +154,6 @@ function ControlPanel({
             <p>
               Edge {selectedEdge.source} → {selectedEdge.target}
             </p>
-
-            {/* reset the input when a different edge is selected */}
             <form
               key={selectedEdge.id}
               onSubmit={submitCapacity}
@@ -196,34 +180,16 @@ function ControlPanel({
           </>
         )}
 
-        {!selectedNode && !selectedEdge && (
+        {!selectedNodeId && !selectedEdge && (
           <p className="hint">Click a node or edge to edit it</p>
         )}
       </section>
-
-      <section>
-        <h2>Max flow</h2>
-        <p>
-          Source: <strong>{network.source ?? 'none'}</strong>, sink:{' '}
-          <strong>{network.sink ?? 'none'}</strong>
-        </p>
-
-        <button
-          type="button"
-          className="primary"
-          onClick={onRun}
-          disabled={!canRun}
-        >
-          Run Edmonds-Karp
-        </button>
-
-        {result && (
-          <p className="result">
-            Maximum flow: <strong>{result.maxFlow}</strong>
-          </p>
-        )}
-        {error && <p className="error">{error}</p>}
-      </section>
+      <BfsPanel network={network} onHighlight={onHighlight} />
+      <EdmondsKarpPanel
+        network={network}
+        onHighlight={onHighlight}
+        onFlowChanged={onFlowChanged}
+      />
     </aside>
   )
 }
