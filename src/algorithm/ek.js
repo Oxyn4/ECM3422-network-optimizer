@@ -71,33 +71,29 @@ export function findAugmentingPath(network, flows) {
         const curr = queue.shift();
         const neighbors = network.getConnectedNodes(curr) || [];
 
+        // forward residual edges: curr -> neighbor with spare capacity
         for (const neighbor of neighbors) {
             if (visited.has(neighbor)) continue;
 
-            const edge = network.list.get(curr)?.get(neighbor);
-
-            if (edge) {
-                const residualCapacity = edge.capacity - edge.flow;
-                if (residualCapacity > 0) {
-                    visited.add(neighbor);
-                    parent.set(neighbor, { from: curr, type: 'forward', edge });
-                    queue.push(neighbor);
-
-                    if (neighbor === sink) {
-                        return buildAugmentingPath(parent, src, sink);
-                    }
-                }
-            }
-
-            const reverseEdge = network.list.get(neighbor)?.get(curr);
-            if (reverseEdge && reverseEdge.flow > 0) {
+            const edge = network.list.get(curr).get(neighbor);
+            if (edge.capacity - edge.flow > 0) {
                 visited.add(neighbor);
-                parent.set(neighbor, { from: curr, type: 'backward', edge: reverseEdge });
+                parent.set(neighbor, { from: curr, type: 'forward', edge });
+                if (neighbor === sink) return buildAugmentingPath(parent, src, sink);
                 queue.push(neighbor);
+            }
+        }
 
-                if (neighbor === sink) {
-                    return buildAugmentingPath(parent, src, sink);
-                }
+        // backward residual edges: an edge prev -> curr carrying flow can be undone
+        for (const [prev, outgoing] of network.list) {
+            if (visited.has(prev)) continue;
+
+            const reverseEdge = outgoing.get(curr);
+            if (reverseEdge && reverseEdge.flow > 0) {
+                visited.add(prev);
+                parent.set(prev, { from: curr, type: 'backward', edge: reverseEdge });
+                if (prev === sink) return buildAugmentingPath(parent, src, sink);
+                queue.push(prev);
             }
         }
     }
@@ -137,6 +133,9 @@ export function edmondsKarp(network) {
     const flows = {};
     let maxFlow = 0;
 
+    // start from zero flow so repeated runs give the same answer
+    network.clearFlows();
+
     while (true) {
         const result = findAugmentingPath(network, flows);
         if (!result) break;
@@ -154,7 +153,7 @@ export function edmondsKarp(network) {
 
     return {
         maxFlow,
-        flows: network.edges.reduce((acc, edge) => {
+        flows: network.allEdges().reduce((acc, edge) => {
             acc[edge.id] = edge.flow;
             return acc;
         }, {}),
