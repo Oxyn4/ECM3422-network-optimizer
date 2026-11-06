@@ -1,19 +1,23 @@
+
 /* Bottleneck detection
 
-The min-cut edges are the edges that limit the maximum flow: together they
-carry all the flow that reaches the sink and they are all saturated.
+Finds the edges that are limiting the max flow in the network.
+These are the edges found from the min cut and are fully used.
 
-findBottlenecks returns them (id, source, target, capacity, flow) plus
-highlight data the UI can feed straight into NetworkGraph.
+Returns the bottleneck edges along with info for the UI
+to highlight them on the graph.
 
-With { sensitivity: true } it also checks each edge individually: how much
-the max flow grows if that edge's capacity is increased by `increase`.
-An edge in one min cut may not help on its own if another min cut exists. */
+If sensitivity is true it also checks how much the flow
+increases when we increase the capacity of each edge.
+Sometimes increasing one edge doesnt help if theres
+another bottleneck in the network.
+*/
 
 import { minCutOfNetwork } from './minCut.js';
 import { cloneNetwork, solveMaxFlow } from './networkUtils.js';
 
 export function findBottlenecks(network, options = {}) {
+
     const {
         source = network.source,
         sink = network.sink,
@@ -22,41 +26,56 @@ export function findBottlenecks(network, options = {}) {
         excludeEdgeIds = [],
     } = options;
 
-    const cut = minCutOfNetwork(network, source, sink);
-    if (cut.error) return { error: cut.error };
+    // Find the min cut edges
+    const result = minCutOfNetwork(network, source, sink);
 
+    if (result.error) return { error: result.error };
+
+    // Edges we dont want to include
     const excluded = new Set(excludeEdgeIds);
 
-    const bottlenecks = cut.cutEdges
-        .filter((edge) => !excluded.has(edge.id))
-        .map((edge) => ({
+    const bottlenecks = result.cutEdges
+        .filter(edge => !excluded.has(edge.id))
+        .map(edge => ({
             id: edge.id,
             source: edge.source,
             target: edge.target,
             capacity: edge.capacity,
-            flow: cut.flows[edge.id] ?? 0,
+            flow: result.flows[edge.id] ?? 0,
             isBottleneck: true,
         }));
 
+    // Check if increasing the edge capacity improves max flow
     if (sensitivity) {
-        for (const b of bottlenecks) {
+
+        for (const edge of bottlenecks) {
+
+            // Use a copy so the orginal isnt changed
             const copy = cloneNetwork(network);
-            copy.setCapacity(b.source, b.target, b.capacity + increase);
+
+            copy.setCapacity(edge.source, edge.target, edge.capacity + increase);
+
             const { maxFlow } = solveMaxFlow(copy, source, sink);
-            b.maxFlowIfIncreased = maxFlow;
-            b.improvement = maxFlow - cut.maxFlow;
+
+            edge.maxFlowIfIncreased = maxFlow;
+            edge.improvement = maxFlow - result.maxFlow;
         }
     }
 
-    const nodeIds = [...new Set(bottlenecks.flatMap((b) => [b.source, b.target]))];
+    // Get all nodes connected to the bottleneck edges
+    const nodeIds = [...new Set(bottlenecks.flatMap(edge => [edge.source, edge.target]))];
 
     return {
-        maxFlow: cut.maxFlow,
-        totalCutCapacity: bottlenecks.reduce((sum, b) => sum + b.capacity, 0),
+        maxFlow: result.maxFlow,
+        totalCutCapacity: bottlenecks.reduce((total, edge) => total + edge.capacity, 0),
         bottlenecks,
-        bottleneckEdgeIds: bottlenecks.map((b) => b.id),
-        sourceSide: cut.reachable,
-        // same shape as the EK panel's highlights: { nodeIds, edgeIds }
-        highlight: { nodeIds, edgeIds: bottlenecks.map((b) => b.id) },
+        bottleneckEdgeIds: bottlenecks.map(edge => edge.id),
+        sourceSide: result.reachable,
+
+        // Node and edge ids used for highlighting on the UI
+        highlight: {
+            nodeIds,
+            edgeIds: bottlenecks.map(edge => edge.id)
+        },
     };
 }

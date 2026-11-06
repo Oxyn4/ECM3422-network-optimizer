@@ -1,88 +1,125 @@
-/* Shared helpers for the network analysis modules (min cut, bottlenecks,
-   failure simulations, multi source/sink).
 
-   All analysis works on a copy of the FlowNet, so the network the UI is
-   showing is never modified. */
+/* Shared functions for network analysis
+   Used for min cut, bottlenecks and node/edge failure simualtions.
+
+   We use copies of the network so the orginal graph
+   isnt changed when running the algorithms.
+*/
 
 import { FlowNet } from '../data/sampleNetwork.js';
 import { edmondsKarp } from './ek.js';
 
-// Deep copy of a FlowNet: nodes, edges (with their ids), positions, source and sink.
-// The copy is meant for analysis only: it shares the id generators with the
-// original, so do not add nodes or edges to it through add()/connect().
+// Make a copy of the network with all nodes, edges and positions
+// Keeps the same ids but should only be used for analysis
 export function cloneNetwork(network) {
     const copy = Object.create(FlowNet.prototype);
+
     copy.nodeGenerator = network.nodeGenerator;
     copy.edgeGenerator = network.edgeGenerator;
     copy.source = network.source;
     copy.sink = network.sink;
+
     copy.nodePositions = new Map(network.nodePositions);
     copy.list = new Map();
+
     for (const [nodeId, neighbours] of network.list) {
-        const inner = new Map();
+        const edges = new Map();
+
         for (const [target, edge] of neighbours) {
-            inner.set(target, { id: edge.id, flow: edge.flow, capacity: edge.capacity });
+            edges.set(target, {
+                id: edge.id,
+                flow: edge.flow,
+                capacity: edge.capacity
+            });
         }
-        copy.list.set(nodeId, inner);
+
+        copy.list.set(nodeId, edges);
     }
+
     return copy;
 }
 
-// The UI refers to edges as "edge-A"; the FlowNet stores them as "A". Accept both.
+
+// The UI uses edge-A but the network just stores A
+// Allow both formats
 export function normaliseEdgeId(edgeId) {
     if (typeof edgeId !== 'string') return null;
+
     return edgeId.startsWith('edge-') ? edgeId.slice(5) : edgeId;
 }
 
-// Find an edge by id. Returns { source, target, edge } or null.
+
+// Search through the network to find an edge with the given id
 export function locateEdge(network, edgeId) {
     const id = normaliseEdgeId(edgeId);
+
     if (id === null) return null;
+
     for (const [source, neighbours] of network.list) {
         for (const [target, edge] of neighbours) {
-            if (edge.id === id) return { source, target, edge };
+            if (edge.id === id) {
+                return { source, target, edge };
+            }
         }
     }
+
     return null;
 }
 
-// Residual graph in the format findMinCut expects:
-//   { S: { A: 0, B: 5 }, A: { S: 10, T: 0 } }
-// forward entry = capacity - flow, backward entry = flow.
+
+// Build the residual graph used for finding the min cut
+// Forward = capacity minus flow, backwards = current flow
 export function buildResidualGraph(network) {
     const residual = {};
-    for (const nodeId of network.list.keys()) residual[nodeId] = {};
+
+    for (const nodeId of network.list.keys()) {
+        residual[nodeId] = {};
+    }
 
     for (const [u, neighbours] of network.list) {
         for (const [v, edge] of neighbours) {
+
             residual[u][v] = (residual[u][v] ?? 0) + (edge.capacity - edge.flow);
             residual[v][u] = (residual[v][u] ?? 0) + edge.flow;
         }
     }
+
     return residual;
 }
 
-// Check a source/sink pair against a network. Returns an error string or null.
+
+// Check that source and sink are both valid nodes
+// Return an error if theres a problem
 export function validateTerminals(network, source, sink) {
     if (source === undefined || source === null) return 'No source node selected';
     if (sink === undefined || sink === null) return 'No sink node selected';
+
     if (!network.exists(source)) return `Source node "${source}" does not exist`;
     if (!network.exists(sink)) return `Sink node "${sink}" does not exist`;
+
     if (source === sink) return 'Source and sink must be different nodes';
+
     return null;
 }
 
-// Run Edmonds-Karp on a copy of the network with the given source and sink.
-// Returns { maxFlow, flows, network } where network is the solved copy.
+
+// Run Edmonds Karp on a copy so we dont change the main network
 export function solveMaxFlow(network, source = network.source, sink = network.sink) {
-    const copy = cloneNetwork(network);
-    copy.source = source;
-    copy.sink = sink;
-    const { maxFlow, flows } = edmondsKarp(copy);
-    return { maxFlow, flows, network: copy };
+    const graphCopy = cloneNetwork(network);
+
+    graphCopy.source = source;
+    graphCopy.sink = sink;
+
+    const { maxFlow, flows } = edmondsKarp(graphCopy);
+
+    return { maxFlow, flows, network: graphCopy };
 }
 
+
+// Work out the percentage change
 export function percentage(part, whole) {
     if (whole === 0) return 0;
+
     return Math.round((part / whole) * 10000) / 100;
 }
+
