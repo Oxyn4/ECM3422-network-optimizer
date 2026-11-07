@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { edmondsKarpTrace } from '../../algorithm/ek.js';
 import { HIGHLIGHT_COLORS } from '../NetworkGraph.jsx';
 import './EdmondsKarpPanel.css'
+
+// how long Play waits between augmenting paths
+const PLAY_DELAY_MS = 900;
 
 function applySteps(network, steps, upto) {
     network.clearFlows();
@@ -56,6 +59,22 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
     const [steps, setSteps] = useState(null);
     const [step, setStep] = useState(-1);
     const [hover, setHover] = useState(null);
+    const [playing, setPlaying] = useState(false);
+
+    // Play just presses Next on a timer until the last path
+    const tick = useEffectEvent(() => {
+        if (!steps || step >= steps.length - 1) {
+            setPlaying(false);
+            return;
+        }
+        advanceStep();
+    });
+
+    useEffect(() => {
+        if (!playing) return;
+        const timer = setTimeout(tick, PLAY_DELAY_MS);
+        return () => clearTimeout(timer);
+    }, [playing, step]);
 
     function startEK() {
         const s = edmondsKarpTrace(network);
@@ -87,6 +106,21 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
         onFlowChanged?.();
     }
 
+    // go back one path; from the first path this returns to zero flow
+    function stepBack() {
+        if (!steps || step < 0) return;
+        setPlaying(false);
+        if (step === 0) {
+            network.clearFlows();
+            setStep(-1);
+            setHover(null);
+            onHighlight(null);
+            onFlowChanged?.();
+            return;
+        }
+        jumpTo(step - 1);
+    }
+
     function enterSummaryItem(index) {
         if (index > step) return;
         setHover(index);
@@ -99,6 +133,7 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
     }
 
     function reset() {
+        setPlaying(false);
         network.clearFlows();
         setSteps(null);
         setStep(-1);
@@ -137,7 +172,10 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
                                 title={i <= step ? `Path ${i + 1}: +${s.bottleneck}` : undefined}
                                 onMouseEnter={() => enterSummaryItem(i)}
                                 onMouseLeave={leaveSummaryItem}
-                                onClick={() => jumpTo(i)}
+                                onClick={() => {
+                                    setPlaying(false);
+                                    jumpTo(i);
+                                }}
                             >
                                 <span className="ek-swatch" />
                                 {i <= step
@@ -146,9 +184,24 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
                             </li>
                         ))}
                     </ul>
-                    <button className="primary" onClick={advanceStep} disabled={done}>
-                        Next
-                    </button>
+                    <div className="button-row">
+                        <button className="primary" onClick={stepBack} disabled={step < 0}>
+                            Back
+                        </button>
+                        <button
+                            className="primary"
+                            onClick={() => {
+                                setPlaying(false);
+                                advanceStep();
+                            }}
+                            disabled={done}
+                        >
+                            Next
+                        </button>
+                        <button className="primary" onClick={() => setPlaying(!playing)} disabled={done}>
+                            {playing ? 'Pause' : 'Play'}
+                        </button>
+                    </div>
                 </>
             )}
             <button className='primary' onClick={reset}>Reset</button>
