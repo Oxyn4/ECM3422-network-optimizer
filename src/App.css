@@ -102,3 +102,102 @@
 .result {
   margin-top: 8px;
 }
+
+/* analysis results */
+.control-panel h3 {
+  font-size: 14px;
+  margin: 12px 0 4px;
+  color: var(--text-h);
+}
+
+.result-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.result-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.result-list li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.result-list li:hover,
+.result-table tbody tr:hover {
+  background: #2563eb1a;
+}
+
+.improvement {
+  color: #16a34a;
+}
+
+.no-gain {
+  color: var(--text);
+}
+
+.warning {
+  color: #b45309;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.table-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.result-table th,
+.result-table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.result-table th.num,
+.result-table td.num {
+  text-align: right;
+}
+
+.result-table tbody tr {
+  cursor: pointer;
+}
+
+.multi-table tbody tr {
+  cursor: default;
+}
+
+.control-panel input[type='checkbox'] {
+  padding: 0;
+}
+
+.control-panel button.active {
+  background: #2563eb;
+  color: #fff;
+  border: 1px solid #2563eb;
+  border-radius: 4px;
+}
+
+.control-panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
