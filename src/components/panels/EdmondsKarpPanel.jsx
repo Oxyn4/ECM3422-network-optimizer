@@ -204,7 +204,7 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
                     </div>
                 </>
             )}
-            <button className='primary' onClick={reset}>Reset</button>
+            <button className='tertiary' onClick={reset}>Reset</button>
         </section>
     );
 }

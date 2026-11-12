@@ -163,6 +163,9 @@ style.push(
   { selector: 'node.path-active', style: { 'border-width': 5 } }
 )
 
+// padding (px) kept around the network when fitting; big enough to clear the floating toolbar
+const FIT_PADDING = 80
+
 function NetworkGraph({ network, selection, highlight, flowOverride, onSelect, onNodeMove }) {
   const containerRef = useRef(null)
   const cyRef = useRef(null)
@@ -192,7 +195,23 @@ function NetworkGraph({ network, selection, highlight, flowOverride, onSelect, o
     })
 
     cyRef.current = cy
-    return () => cy.destroy()
+
+    // the container now grows with the window, so tell cytoscape and re-fit when it changes size
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        cy.resize()
+        cy.fit(undefined, FIT_PADDING)
+      })
+    })
+    observer.observe(containerRef.current)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      cy.destroy()
+    }
   }, [])
 
   // sync network data changes into cytoscape using a batch operation
@@ -203,10 +222,10 @@ function NetworkGraph({ network, selection, highlight, flowOverride, onSelect, o
       cy.add(toElements(network, selection, highlight, flowOverride))
     })
   }, [network, selection, highlight, flowOverride])
-  // autofit the view whenever the node structure changes
+  // autofit the view on load and whenever the node structure changes
   const nodeIds = network.nodes.map((node) => node.id).join(',')
   useEffect(() => {
-    cyRef.current?.fit(undefined, 40)
+    cyRef.current?.fit(undefined, FIT_PADDING)
   }, [nodeIds])
   return <div ref={containerRef} className="network-graph" />
 }

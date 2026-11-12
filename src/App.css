@@ -1,42 +1,195 @@
 .app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
+  /* header height + page padding */
+  --chrome: 72px;
+  --workspace-h: calc(100dvh - var(--chrome));
+
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+}
+
+/* one-line header */
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  height: 36px;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 36px;
+}
+
+.app-subtitle {
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* graph on the left, controls on the right; stacks on narrow screens */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 16px;
   align-items: start;
+}
+
+/* graph and its floating toolbar share this box */
+.graph-area {
+  position: relative;
+  min-width: 0;
+}
+
+.network-graph {
+  box-sizing: border-box;
+  overflow: hidden;
+  width: 100%;
+  height: var(--workspace-h);
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/*  toolbar over the graph  */
+.graph-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+  backdrop-filter: blur(4px);
+}
+
+/* sidebar: sticky and scrolls on its own */
+.control-panel {
+  position: sticky;
+  top: 12px;
+  box-sizing: border-box;
+  max-height: var(--workspace-h);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px; /* room for the scrollbar */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-panel section {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .network-graph {
+    height: 60vh;
+    min-height: 320px;
+  }
+
+  .control-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
-.network-graph {
-  overflow: hidden;
-  width: 100%;
-  height: 560px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.control-panel {
+/*  Edit panel  */
+.panel-collapsible summary {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
 }
 
-.control-panel section {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+.panel-collapsible summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-collapsible summary::before {
+  content: '▸';
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+
+.panel-collapsible details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.panel-collapsible summary h2 {
+  margin: 0;
+}
+
+.panel-collapsible details[open] > summary {
+  margin-bottom: 8px;
+}
+
+/* algorithms panel (tabs)  */
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.control-panel .tabs button.tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 13px;
+  white-space: nowrap;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.control-panel .tabs button.tab.active {
+  border-bottom-color: #2563eb;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* the panels inside a tab are already framed by the Algorithms box and named */
+.control-panel .tab-body > section {
+  border: none;
+  padding: 0;
+}
+
+.control-panel .tab-body > section > h2 {
+  display: none;
+}
+
+.control-panel .tab-body button {
+  margin: 0 6px 6px 0;
+}
+
+.control-panel .tab-body .button-row button {
+  margin: 0;
 }
 
 .control-panel h2 {
@@ -200,4 +353,74 @@
 .control-panel button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.app button:not(.tab) {
+  min-height: 40px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #2563eb;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.app button:not(.tab):hover {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+}
+
+.app button:not(.tab):active {
+  transform: none;
+  box-shadow: none;
+}
+
+.app button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.app button.primary,
+.app button.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.app button.primary:hover,
+.app button.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.app button.tertiary {
+  background: #fff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.app button.tertiary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.app button.danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.app button.danger:hover {
+  background: #fef2f2;
+  border-color: #b91c1c;
+  color: #b91c1c;
 }

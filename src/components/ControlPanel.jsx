@@ -10,6 +10,13 @@ function NumberInput(props) {
   return <input type="number" {...props} />
 }
 
+// the step-through algorithms share one panel, one tab each
+const ALGORITHM_TABS = [
+  { id: 'bfs', label: 'BFS' },
+  { id: 'ek', label: 'Edmonds-Karp' },
+  { id: 'multi', label: 'Multi-source' },
+]
+
 function ControlPanel({
   network,
   selection,
@@ -27,19 +34,17 @@ function ControlPanel({
   onSetSource,
   onSetSink,
   onSelect,
-  onRun,
   onFindBottlenecks,
   onFailEdge,
   onFailNode,
-  onRankEdges,
   onMultiFlow,
   onSetView,
-  onResetView,
   onHighlight,
   onFlowChanged,
 
 }) {
   const [edgeSource, setEdgeSource] = useState('')
+  const [algorithmTab, setAlgorithmTab] = useState('ek')
   const selectedNodeId =
     selection?.kind === 'node' && network.exists(selection.id)
       ? selection.id
@@ -75,109 +80,6 @@ function ControlPanel({
           {error}
         </p>
       )}
-
-      <section>
-        <h2>Network</h2>
-        <div className="button-row">
-          <button type="button" onClick={onRandom}>
-            Random network
-          </button>
-          <button type="button" onClick={onExample}>
-            Example network
-          </button>
-          <button type="button" onClick={onAddNode}>
-            Add node
-          </button>
-          <button type="button" onClick={onDownload}>
-            Download JSON
-          </button>
-        </div>
-      </section>
-
-      <section>
-        <h2>Analysis</h2>
-        <div className="button-row">
-          <button type="button" className="primary" onClick={onRun}>
-            Run max flow
-          </button>
-          <button type="button" onClick={() => onFindBottlenecks(false)}>
-            Find bottlenecks
-          </button>
-          <button type="button" onClick={onRankEdges}>
-            Rank all edges
-          </button>
-          <button type="button" onClick={onResetView}>
-            Reset view
-          </button>
-        </div>
-      </section>
-
-      {result && (
-        <AnalysisPanel
-          key={'analysis-' + viewKey}
-          network={network}
-          analysis={result}
-          onSelect={onSelect}
-          onHighlight={onHighlight}
-          onFindBottlenecks={onFindBottlenecks}
-          onSetView={onSetView}
-        />
-      )}
-
-      <section>
-        <h2>Add edge</h2>
-        <form onSubmit={submitEdge} className="edge-form">
-          <label>
-            From
-            <select
-              name="from"
-              value={edgeSource}
-              onChange={(event) => setEdgeSource(event.target.value)}
-              required
-            >
-              <option value="" disabled>
-                Choose node
-              </option>
-              {network.nodes().map((nodeId) => (
-                <option key={nodeId} value={nodeId}>
-                  {nodeId}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            To
-            <select name="to" defaultValue="" required>
-              <option value="" disabled>
-                Choose node
-              </option>
-              {network.nodes().map((nodeId) => (
-                <option
-                  key={nodeId}
-                  value={nodeId}
-                  disabled={nodeId === edgeSource}
-                >
-                  {nodeId}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Capacity
-            <NumberInput
-              name="capacity"
-              min="1"
-              step="1"
-              defaultValue="10"
-              required
-            />
-          </label>
-
-          <button type="submit">Add edge</button>
-        </form>
-      </section>
 
       <section>
         <h2>Selected</h2>
@@ -255,14 +157,150 @@ function ControlPanel({
           <p className="hint">Click a node or edge to edit it</p>
         )}
       </section>
-      <BfsPanel key={'bfs-' + viewKey} network={network} onHighlight={onHighlight} />
-      <EdmondsKarpPanel
-        key={'ek-' + viewKey}
-        network={network}
-        onHighlight={onHighlight}
-        onFlowChanged={onFlowChanged}
-      />
-      <MultiSourceSinkPanel network={network} onRun={onMultiFlow} />
+
+      {result && (
+        <AnalysisPanel
+          key={'analysis-' + viewKey}
+          network={network}
+          analysis={result}
+          onSelect={onSelect}
+          onHighlight={onHighlight}
+          onFindBottlenecks={onFindBottlenecks}
+          onSetView={onSetView}
+        />
+      )}
+
+      {/* Network + Add edge merged into one collapsible Edit panel */}
+      <section className="panel-collapsible">
+        <details open>
+          <summary>
+            <h2>Edit</h2>
+          </summary>
+
+          <div className="button-row">
+            <button type="button" onClick={onRandom}>
+              Random network
+            </button>
+            <button type="button" onClick={onExample}>
+              Example network
+            </button>
+            <button type="button" onClick={onAddNode}>
+              Add node
+            </button>
+            <button type="button" onClick={onDownload}>
+              Download JSON
+            </button>
+          </div>
+
+          <h3>Add edge</h3>
+          <form onSubmit={submitEdge} className="edge-form">
+            <label>
+              From
+              <select
+                name="from"
+                value={edgeSource}
+                onChange={(event) => setEdgeSource(event.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Choose node
+                </option>
+                {network.nodes().map((nodeId) => (
+                  <option key={nodeId} value={nodeId}>
+                    {nodeId}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              To
+              <select name="to" defaultValue="" required>
+                <option value="" disabled>
+                  Choose node
+                </option>
+                {network.nodes().map((nodeId) => (
+                  <option
+                    key={nodeId}
+                    value={nodeId}
+                    disabled={nodeId === edgeSource}
+                  >
+                    {nodeId}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Capacity
+              <NumberInput
+                name="capacity"
+                min="1"
+                step="1"
+                defaultValue="10"
+                required
+              />
+            </label>
+
+            <button type="submit">Add edge</button>
+          </form>
+        </details>
+      </section>
+
+      {/* BFS, Edmonds-Karp and multi source/sink merged into one tabbed Algorithms panel */}
+      <section className="algorithms">
+        <h2>Algorithms</h2>
+        <div className="tabs" role="tablist" aria-label="Algorithms">
+          {ALGORITHM_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={'tab-' + tab.id}
+              aria-selected={algorithmTab === tab.id}
+              aria-controls={'tabpanel-' + tab.id}
+              className={algorithmTab === tab.id ? 'tab active' : 'tab'}
+              onClick={() => setAlgorithmTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* every tab stays mounted (just hidden) so switching tabs keeps playback state */}
+        <div
+          role="tabpanel"
+          id="tabpanel-bfs"
+          aria-labelledby="tab-bfs"
+          className="tab-body"
+          hidden={algorithmTab !== 'bfs'}
+        >
+          <BfsPanel key={'bfs-' + viewKey} network={network} onHighlight={onHighlight} />
+        </div>
+        <div
+          role="tabpanel"
+          id="tabpanel-ek"
+          aria-labelledby="tab-ek"
+          className="tab-body"
+          hidden={algorithmTab !== 'ek'}
+        >
+          <EdmondsKarpPanel
+            key={'ek-' + viewKey}
+            network={network}
+            onHighlight={onHighlight}
+            onFlowChanged={onFlowChanged}
+          />
+        </div>
+        <div
+          role="tabpanel"
+          id="tabpanel-multi"
+          aria-labelledby="tab-multi"
+          className="tab-body"
+          hidden={algorithmTab !== 'multi'}
+        >
+          <MultiSourceSinkPanel network={network} onRun={onMultiFlow} />
+        </div>
+      </section>
     </aside>
   )
 }

@@ -71,7 +71,7 @@ export function MultiSourceSinkPanel({ network, onRun }) {
                 >
                     Run multi max Flow
                 </button>
-                <button type="button" onClick={clearTicks}>
+                <button type="button" className="tertiary" onClick={clearTicks}>
                     Clear ticks
                 </button>
             </div>
