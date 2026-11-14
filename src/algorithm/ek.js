@@ -51,14 +51,15 @@ function incomingEdges(network) {
     return incoming;
 }
 
-export function findAugmentingPath(network) {
+// backward: false skips undoing flow, which gives the simple greedy baseline
+export function findAugmentingPath(network, { backward = true } = {}) {
 
     const src = network.source;
     const sink = network.sink;
 
     if (!src || !sink) return null;
 
-    const incoming = incomingEdges(network);
+    const incoming = backward ? incomingEdges(network) : new Map();
     const visited = new Set();
     const parent = new Map();
     const queue = [];
@@ -127,14 +128,14 @@ function buildAugmentingPath(parent, src, sink) {
     return { path, bottleneck };
 }
 
-export function edmondsKarp(network) {
+export function edmondsKarp(network, options = {}) {
     let maxFlow = 0;
 
     // start from zero flow so repeated runs give the same answer
     network.clearFlows();
 
     while (true) {
-        const result = findAugmentingPath(network);
+        const result = findAugmentingPath(network, options);
         if (!result) break;
 
         for (const { type, edge } of result.path) {

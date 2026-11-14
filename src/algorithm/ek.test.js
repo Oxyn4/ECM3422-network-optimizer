@@ -155,6 +155,32 @@ describe('edmondsKarp', () => {
     });
 });
 
+describe('greedy baseline (no backward edges)', () => {
+    it('gets stuck below the true max flow on a network that needs undoing', () => {
+        // two long paths a-b-c-d-h and a-e-f-g-h, plus a shortcut b->g
+        // the shortest path a-b-g-h blocks both, so only undoing b->g reaches 2
+        const net = build([
+            ['A', 'B', 1], ['B', 'C', 1], ['C', 'D', 1], ['D', 'H', 1],
+            ['A', 'E', 1], ['E', 'F', 1], ['F', 'G', 1], ['G', 'H', 1],
+            ['B', 'G', 1],
+        ], 8, 'H');
+
+        expect(edmondsKarp(net, { backward: false }).maxFlow).toBe(1);
+        expect(edmondsKarp(net).maxFlow).toBe(2);
+    });
+
+    it('never beats edmonds-karp on random networks', () => {
+        for (let i = 0; i < 20; i++) {
+            const net = makeRandomNetwork(15, 0.3, 1, 20, 2);
+            const best = edmondsKarp(net).maxFlow;
+            const greedy = edmondsKarp(net, { backward: false }).maxFlow;
+
+            expect(greedy).toBeLessThanOrEqual(best);
+            for (const e of net.allEdges()) expect(e.flow).toBeLessThanOrEqual(e.capacity);
+        }
+    });
+});
+
 describe('edmondsKarpTrace', () => {
     it('returns no steps when there is no sink', () => {
         expect(edmondsKarpTrace(build([['A', 'B', 5]], 2, null))).toEqual([]);
