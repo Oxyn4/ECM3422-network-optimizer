@@ -37,22 +37,6 @@ export function BFS(network) {
     return trace;
 }
 
-function reconstructPath(parent, src, sink) {
-    const path = [];
-    let current = sink;
-
-    while (current !== src) {
-        path.unshift(current);
-        current = parent.get(current);
-        if (current === undefined) {
-            return null;
-        }
-    }
-
-    path.unshift(src);
-    return path;
-}
-
 export function findAugmentingPath(network, flows) {
 
     const src = network.source;
