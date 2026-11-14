@@ -85,6 +85,14 @@ export class FlowNet {
     return this.list.has(nodeId);
   }
 
+  setSource(nodeId) {
+    if (this.exists(nodeId)) {
+      this.source = nodeId;
+      return true;
+    }
+    return false;
+  }
+
   setSink(nodeId) {
     if (this.exists(nodeId)) {
       this.sink = nodeId;

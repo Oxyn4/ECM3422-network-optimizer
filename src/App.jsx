@@ -65,7 +65,7 @@ function downloadJson(net, analysis) {
 
 function App() {
   const [network, setNetwork] = useState(() => makeRandomNetwork())
-  const [revision, setRevision] = useState(0)
+  const [, setRevision] = useState(0)
   const [selection, setSelection] = useState(null) // { kind: 'node' | 'edge', id } or null
   const [highlight, setHighlight] = useState(null)
   const [result, setResult] = useState(null) // last result shown in the Results panel, with a type field
@@ -306,7 +306,7 @@ function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <h1>Network Optimizer</h1>
+        <h1>Network Optimiser</h1>
         <span className="app-subtitle">Edmonds-Karp max-flow visualiser</span>
       </header>
       <div className="workspace">
@@ -378,8 +378,8 @@ function App() {
             setSelection(null)
           }}
           onSetSource={(nodeId) => {
-            network.source = nodeId
-            changeNetwork(network)
+            if (network.setSource(nodeId)) changeNetwork(network)
+            else setError('Unknown node')
           }}
           onSetSink={(nodeId) => {
             if (network.setSink(nodeId)) changeNetwork(network)

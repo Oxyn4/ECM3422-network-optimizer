@@ -114,6 +114,23 @@ describe('FlowNet', () => {
     });
   });
 
+  describe('setSource', () => {
+    it('should set source to valid node', () => {
+      const net = new FlowNet();
+      const node1 = net.add(net.source, 0, 10);
+
+      expect(net.setSource(node1)).toBe(true);
+      expect(net.source).toBe(node1);
+    });
+
+    it('should fail to set source to non-existent node', () => {
+      const net = new FlowNet();
+      const original = net.source;
+      expect(net.setSource('nonexistent')).toBe(false);
+      expect(net.source).toBe(original);
+    });
+  });
+
   describe('add', () => {
     it('should add single node with an edge from the target to the new node', () => {
       const net = new FlowNet();
