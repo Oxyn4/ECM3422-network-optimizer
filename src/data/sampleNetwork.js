@@ -375,6 +375,9 @@ function bfsDistance(net, start, end) {
 }
 
 function randomFlowNet(nodeCount = 30, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 5, rng = Math.random) {
+  // need a source and a sink
+  if (nodeCount < 2) throw new RangeError("minimum node count is 2");
+
   const randInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 
   let net;

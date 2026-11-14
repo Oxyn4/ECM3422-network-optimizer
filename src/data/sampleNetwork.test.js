@@ -256,44 +256,36 @@ describe('FlowNet', () => {
     });
   });
 
-  describe('positions', () => {
-    it('should generate positions for given count', () => {
+  describe('layout (cytoscape positions)', () => {
+    it('should give every node numeric coordinates', () => {
       const net = new FlowNet();
       net.add(net.source, 0, 10);
       net.add(net.source, 0, 5);
 
-      const positions = net.positions(3);
-      expect(positions.length).toBe(3);
-
-      positions.forEach(pos => {
-        expect(typeof pos.x).toBe('number');
-        expect(typeof pos.y).toBe('number');
+      const { nodes } = net.cytoscape();
+      expect(nodes.length).toBe(3);
+      nodes.forEach(n => {
+        expect(Number.isFinite(n.x)).toBe(true);
+        expect(Number.isFinite(n.y)).toBe(true);
       });
     });
 
-    it('should spread positions across grid', () => {
+    it('should spread nodes across the grid', () => {
       const net = new FlowNet();
-      const positions = net.positions(9);
+      for (let i = 0; i < 8; i++) net.add(net.source, 0, 1);
 
-      // With 9 nodes, we expect ~3 columns
-      const xValues = positions.map(p => p.x);
-      const yValues = positions.map(p => p.y);
-
-      // Should have variety in both dimensions
-      expect(new Set(xValues).size).toBeGreaterThan(1);
-      expect(new Set(yValues).size).toBeGreaterThan(1);
+      const { nodes } = net.cytoscape();
+      expect(new Set(nodes.map(n => n.x)).size).toBeGreaterThan(1);
+      expect(new Set(nodes.map(n => n.y)).size).toBeGreaterThan(1);
     });
 
-    it('should add random offset to positions', () => {
+    it('should not place two nodes at the same position', () => {
       const net = new FlowNet();
-      const positions1 = net.positions(5);
-      const positions2 = net.positions(5);
+      for (let i = 0; i < 8; i++) net.add(net.source, 0, 1);
 
-      // Positions should be different due to random offset
-      const allDifferent = positions1.every((pos, i) =>
-        pos.x !== positions2[i].x || pos.y !== positions2[i].y
-      );
-      expect(allDifferent).toBe(true);
+      const { nodes } = net.cytoscape();
+      const keys = nodes.map(n => `${n.x},${n.y}`);
+      expect(new Set(keys).size).toBe(keys.length);
     });
   });
 
@@ -355,15 +347,15 @@ describe('FlowNet', () => {
 
 describe('makeRandomNetwork', () => {
   it('should create network with correct node count', () => {
-    const net = makeRandomNetwork(5, 0.3, 1, 10);
+    const net = makeRandomNetwork(5, 0.3, 1, 10, 1);
     const data = net.cytoscape();
 
     expect(data.nodes.length).toBe(5);
   });
 
   it('should create network with varying densities', () => {
-    const lowDensity = makeRandomNetwork(10, 0.1, 1, 10);
-    const highDensity = makeRandomNetwork(10, 0.5, 1, 10);
+    const lowDensity = makeRandomNetwork(10, 0.1, 1, 10, 1);
+    const highDensity = makeRandomNetwork(10, 0.5, 1, 10, 1);
 
     const lowData = lowDensity.cytoscape();
     const highData = highDensity.cytoscape();
@@ -372,7 +364,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should respect capacity bounds', () => {
-    const net = makeRandomNetwork(5, 0.3, 5, 10);
+    const net = makeRandomNetwork(5, 0.3, 5, 10, 1);
     const data = net.cytoscape();
 
     data.edges.forEach(edge => {
@@ -382,7 +374,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should always set a sink node', () => {
-    const net = makeRandomNetwork(5, 0.3, 1, 10);
+    const net = makeRandomNetwork(5, 0.3, 1, 10, 1);
     expect(net.sink).toBeDefined();
   });
 
@@ -397,9 +389,9 @@ describe('makeRandomNetwork', () => {
       return counter / 100;
     };
 
-    const net1 = makeRandomNetwork(5, 0.3, 1, 10, deterministicRng);
+    const net1 = makeRandomNetwork(5, 0.3, 1, 10, 1, deterministicRng);
     counter = 0;
-    const net2 = makeRandomNetwork(5, 0.3, 1, 10, deterministicRng);
+    const net2 = makeRandomNetwork(5, 0.3, 1, 10, 1, deterministicRng);
 
     const data1 = net1.cytoscape();
     const data2 = net2.cytoscape();
@@ -410,7 +402,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should create valid network structure', () => {
-    const net = makeRandomNetwork(8, 0.25, 1, 20);
+    const net = makeRandomNetwork(8, 0.25, 1, 20, 1);
     const data = net.cytoscape();
 
     // All nodes should have unique IDs
@@ -433,7 +425,7 @@ describe('Edge cases and error handling', () => {
   });
 
   it('should handle dense networks', () => {
-    const net = makeRandomNetwork(10, 0.8, 1, 10);
+    const net = makeRandomNetwork(10, 0.8, 1, 10, 1);
     const data = net.cytoscape();
 
     // Dense network should have many edges
