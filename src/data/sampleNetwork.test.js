@@ -273,6 +273,102 @@ describe('FlowNet', () => {
     });
   });
 
+  describe('removeNode', () => {
+    it('should remove the node and every edge into or out of it', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      const c = net.addNode();
+      net.connect(net.source, b, 0, 5);
+      net.connect(b, c, 0, 5);
+      net.setNodePosition(b, { x: 1, y: 2 });
+
+      expect(net.removeNode(b)).toBe(true);
+      expect(net.exists(b)).toBe(false);
+      expect(net.nodePositions.has(b)).toBe(false);
+      expect(net.edgeCount()).toBe(0);
+    });
+
+    it('should clear the sink when the sink is removed', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+      net.setSink(b);
+
+      net.removeNode(b);
+      expect(net.sink).toBeNull();
+    });
+
+    it('should not remove the source or a missing node', () => {
+      const net = new FlowNet();
+      expect(net.removeNode(net.source)).toBe(false);
+      expect(net.exists(net.source)).toBe(true);
+      expect(net.removeNode('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('removeEdge', () => {
+    it('should remove only the chosen edge', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+      const c = net.add(net.source, 0, 5);
+
+      expect(net.removeEdge(net.source, b)).toBe(true);
+      expect(net.getEdge(net.source, b)).toBeUndefined();
+      expect(net.getEdge(net.source, c)).toBeDefined();
+      expect(net.exists(b)).toBe(true);
+    });
+
+    it('should return false for a missing edge or node', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      expect(net.removeEdge(net.source, b)).toBe(false);
+      expect(net.removeEdge('nonexistent', b)).toBe(false);
+    });
+  });
+
+  describe('setCapacity', () => {
+    it('should change the capacity of an existing edge', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+
+      expect(net.setCapacity(net.source, b, 12)).toBe(true);
+      expect(net.getEdge(net.source, b).capacity).toBe(12);
+    });
+
+    it('should return false when the edge does not exist', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      expect(net.setCapacity(net.source, b, 12)).toBe(false);
+      expect(net.setCapacity('nonexistent', b, 12)).toBe(false);
+    });
+  });
+
+  describe('clearFlows', () => {
+    it('should set every edge flow back to zero and keep capacities', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 3, 10);
+      net.connect(b, net.source, 4, 8);
+
+      net.clearFlows();
+      for (const edge of net.allEdges()) expect(edge.flow).toBe(0);
+      expect(net.getEdge(net.source, b).capacity).toBe(10);
+      expect(net.getEdge(b, net.source).capacity).toBe(8);
+    });
+  });
+
+  describe('setNodePosition', () => {
+    it('should store a position for an existing node', () => {
+      const net = new FlowNet();
+      expect(net.setNodePosition(net.source, { x: 10, y: 20 })).toBe(true);
+      expect(net.nodePositions.get(net.source)).toEqual({ x: 10, y: 20 });
+    });
+
+    it('should return false for a missing node', () => {
+      const net = new FlowNet();
+      expect(net.setNodePosition('nonexistent', { x: 0, y: 0 })).toBe(false);
+      expect(net.nodePositions.size).toBe(0);
+    });
+  });
+
   describe('layout (cytoscape positions)', () => {
     it('should give every node numeric coordinates', () => {
       const net = new FlowNet();
