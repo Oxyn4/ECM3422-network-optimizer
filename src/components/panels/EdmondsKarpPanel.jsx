@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useState } from "react";
 
 import { edmondsKarpTrace } from '../../algorithm/ek.js';
-import { HIGHLIGHT_COLORS } from '../NetworkGraph.jsx';
+import { HIGHLIGHT_COLOURS } from '../highlightColours.js';
 import './EdmondsKarpPanel.css'
 
 // how long Play waits between augmenting paths
@@ -28,7 +28,7 @@ function highlightFor(steps, upto, hoverIdx = null) {
             paths: [{
                 nodeIds: s.nodeIds,
                 edgeIds: s.edgeIds,
-                colorIndex: hoverIdx % HIGHLIGHT_COLORS.length,
+                colourIndex: hoverIdx % HIGHLIGHT_COLOURS.length,
                 active: true,
             }],
         };
@@ -39,26 +39,25 @@ function highlightFor(steps, upto, hoverIdx = null) {
         paths: steps.slice(0, upto + 1).map((s, i) => ({
             nodeIds: s.nodeIds,
             edgeIds: s.edgeIds,
-            colorIndex: i % HIGHLIGHT_COLORS.length,
+            colourIndex: i % HIGHLIGHT_COLOURS.length,
             active: i === upto,
         })),
     };
 }
 
 // classes replace the old summaryItemStyle/swatchStyle inline style factories
-// the per-path colors come from the .pc-N classes in EkPanel.css
+// the per-path colours come from the .pc-N classes in EkPanel.css
 function itemClassName(index, step) {
     const classes = ['ek-item'];
     if (index <= step) classes.push('revealed');
     if (index === step) classes.push('current');
-    classes.push('pc-' + (index % HIGHLIGHT_COLORS.length));
+    classes.push('pc-' + (index % HIGHLIGHT_COLOURS.length));
     return classes.join(' ');
 }
 
 export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
     const [steps, setSteps] = useState(null);
     const [step, setStep] = useState(-1);
-    const [hover, setHover] = useState(null);
     const [playing, setPlaying] = useState(false);
 
     // Play just presses Next on a timer until the last path
@@ -80,7 +79,6 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
         const s = edmondsKarpTrace(network);
         setSteps(s);
         setStep(-1);
-        setHover(null);
         onHighlight(null);
         onFlowChanged?.();
     }
@@ -92,7 +90,6 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
 
         applySteps(network, steps, next);
         setStep(next);
-        setHover(null);
         onHighlight(highlightFor(steps, next));
         onFlowChanged?.();
     }
@@ -101,7 +98,6 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
         if (!steps || index > step || index < 0) return;
         applySteps(network, steps, index);
         setStep(index);
-        setHover(null);
         onHighlight(highlightFor(steps, index));
         onFlowChanged?.();
     }
@@ -113,8 +109,7 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
         if (step === 0) {
             network.clearFlows();
             setStep(-1);
-            setHover(null);
-            onHighlight(null);
+                onHighlight(null);
             onFlowChanged?.();
             return;
         }
@@ -123,12 +118,10 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
 
     function enterSummaryItem(index) {
         if (index > step) return;
-        setHover(index);
         onHighlight(highlightFor(steps, step, index));
     }
 
     function leaveSummaryItem() {
-        setHover(null);
         onHighlight(highlightFor(steps, step));
     }
 
@@ -137,7 +130,6 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
         network.clearFlows();
         setSteps(null);
         setStep(-1);
-        setHover(null);
         onHighlight(null);
         onFlowChanged?.();
     }
@@ -204,7 +196,7 @@ export function EdmondsKarpPanel({ network, onHighlight, onFlowChanged }) {
                     </div>
                 </>
             )}
-            <button className='primary' onClick={reset}>Reset</button>
+            <button className='tertiary' onClick={reset}>Reset</button>
         </section>
     );
 }

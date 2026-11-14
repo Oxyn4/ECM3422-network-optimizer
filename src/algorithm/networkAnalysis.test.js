@@ -6,7 +6,7 @@ import { findMinCut, minCutOfNetwork } from './minCut.js';
 import { findBottlenecks } from './bottleneck.js';
 import { simulateEdgeFailure } from './edgeFailure.js';
 import { simulateNodeFailure } from './nodeFailure.js';
-import { multiSourceSinkMaxFlow, SUPER_SOURCE, SUPER_SINK } from './multiSourceSink.js';
+import { buildSuperNetwork, multiSourceSinkMaxFlow, SUPER_SOURCE, SUPER_SINK } from './multiSourceSink.js';
 import { buildResidualGraph, cloneNetwork, locateEdge, solveMaxFlow } from './networkUtils.js';
 
 // Build a FlowNet from a list of [from, to, capacity]. Node "A" is the source.
@@ -188,6 +188,19 @@ describe('Edge failure simulation', () => {
         expect(result.affectsMaxFlow).toBe(false);
     });
 
+    it('reports how much flow the failed edge was carrying', () => {
+        const { net, ids } = clrs();
+        const result = simulateEdgeFailure(net, ids['D->F']);
+        const expected = solveMaxFlow(net).flows[ids['D->F']];
+
+        expect(expected).toBeGreaterThan(0);
+        expect(result.failedEdge.flowBeforeFailure).toBe(expected);
+
+        // the spare route carries nothing before it fails
+        const spare = build([['A', 'B', 5], ['A', 'C', 5], ['B', 'D', 5], ['C', 'D', 5], ['D', 'E', 5]], 5, 'E');
+        expect(simulateEdgeFailure(spare.net, spare.ids['A->C']).failedEdge.flowBeforeFailure).toBe(0);
+    });
+
     it('accepts edge ids with or without the "edge-" prefix', () => {
         const { net, ids } = clrs();
         const bare = ids['D->F'].replace('edge-', '');
@@ -297,6 +310,36 @@ describe('Multiple sources and sinks', () => {
             expect([b.source, b.target]).not.toContain(SUPER_SOURCE);
             expect([b.source, b.target]).not.toContain(SUPER_SINK);
         }
+    });
+
+    it('builds a super network that links the super nodes to every source and sink', () => {
+        const { net } = multi();
+        const superNet = buildSuperNetwork(net, ['A', 'B'], ['D', 'E']);
+
+        expect(superNet.source).toBe(SUPER_SOURCE);
+        expect(superNet.sink).toBe(SUPER_SINK);
+
+        // each link has unlimited capacity
+        expect(superNet.getEdge(SUPER_SOURCE, 'A').capacity).toBe(Infinity);
+        expect(superNet.getEdge(SUPER_SOURCE, 'B').capacity).toBe(Infinity);
+        expect(superNet.getEdge('D', SUPER_SINK).capacity).toBe(Infinity);
+        expect(superNet.getEdge('E', SUPER_SINK).capacity).toBe(Infinity);
+
+        // the original network is left alone
+        expect(net.exists(SUPER_SOURCE)).toBe(false);
+        expect(net.getConnectedNodes('D')).toEqual([]);
+    });
+
+    it('says whether the limit is inside the network or at the sources and sinks', () => {
+        // limited by c->d and c->e, which both enter a sink
+        expect(multiSourceSinkMaxFlow(multi().net, ['A', 'B'], ['D', 'E']).limitedByTerminals).toBe(true);
+
+        // every edge leaving the only source is full, so a->b is the bottleneck
+        const { net, ids } = build([['A', 'B', 5], ['B', 'C', 9]], 3, 'C');
+        const result = multiSourceSinkMaxFlow(net, ['A'], ['C']);
+        expect(result.maxFlow).toBe(5);
+        expect(result.limitedByTerminals).toBe(true);
+        expect(result.bottleneckEdgeIds).toEqual([ids['A->B']]);
     });
 
     it('matches single source/sink max flow when given one of each', () => {

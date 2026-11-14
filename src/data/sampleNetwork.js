@@ -45,8 +45,8 @@ export class FlowNet {
 
   edgeCount() {
     let total = 0;
-    for (let [key, value] of this.list) {
-      total += value.size;
+    for (const neighbours of this.list.values()) {
+      total += neighbours.size;
     }
     return total;
   }
@@ -83,6 +83,14 @@ export class FlowNet {
 
   exists(nodeId) {
     return this.list.has(nodeId);
+  }
+
+  setSource(nodeId) {
+    if (this.exists(nodeId)) {
+      this.source = nodeId;
+      return true;
+    }
+    return false;
   }
 
   setSink(nodeId) {
@@ -242,9 +250,9 @@ export class FlowNet {
   layoutScore(nodeId, pos, placed) {
     let score = this.collisionScore(nodeId, pos, placed)
 
-    for (const [neighbor, neighborPos] of placed) {
-      if (!this.isAdjacent(nodeId, neighbor)) continue
-      score += this.crossingCount(nodeId, pos, neighbor, neighborPos, placed)
+    for (const [neighbour, neighbourPos] of placed) {
+      if (!this.isAdjacent(nodeId, neighbour)) continue
+      score += this.crossingCount(nodeId, pos, neighbour, neighbourPos, placed)
     }
 
     return score
@@ -358,15 +366,15 @@ function bfsDistance(net, start, end) {
 
   while (queue.length > 0) {
     const [current, dist] = queue.shift();
-    const neighbors = net.getConnectedNodes(current);
+    const neighbours = net.getConnectedNodes(current);
 
-    if (!neighbors) continue;
+    if (!neighbours) continue;
 
-    for (const neighbor of neighbors) {
-      if (neighbor === end) return dist + 1;
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push([neighbor, dist + 1]);
+    for (const neighbour of neighbours) {
+      if (neighbour === end) return dist + 1;
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push([neighbour, dist + 1]);
       }
     }
   }
@@ -375,6 +383,9 @@ function bfsDistance(net, start, end) {
 }
 
 function randomFlowNet(nodeCount = 30, density = 0.25, minCapacity = 1, maxCapacity = 20, minimumBetween = 5, rng = Math.random) {
+  // need a source and a sink
+  if (nodeCount < 2) throw new RangeError("minimum node count is 2");
+
   const randInt = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 
   let net;

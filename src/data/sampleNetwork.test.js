@@ -4,7 +4,7 @@ import { FlowNet, makeRandomNetwork } from './sampleNetwork';
 
 describe('FlowNet', () => {
   describe('constructor', () => {
-    it('should initialize with a source node', () => {
+    it('should initialise with a source node', () => {
       const net = new FlowNet();
       expect(net.count()).toBe(1);
       expect(net.source).toBeDefined();
@@ -25,7 +25,7 @@ describe('FlowNet', () => {
       const node1 = net.add(net.source, 0, 10);
       expect(net.count()).toBe(2);
 
-      const node2 = net.add(node1, 0, 5);
+      net.add(node1, 0, 5);
       expect(net.count()).toBe(3);
     });
 
@@ -111,6 +111,23 @@ describe('FlowNet', () => {
 
       net.setSink(node2);
       expect(net.sink).toBe(node2);
+    });
+  });
+
+  describe('setSource', () => {
+    it('should set source to valid node', () => {
+      const net = new FlowNet();
+      const node1 = net.add(net.source, 0, 10);
+
+      expect(net.setSource(node1)).toBe(true);
+      expect(net.source).toBe(node1);
+    });
+
+    it('should fail to set source to non-existent node', () => {
+      const net = new FlowNet();
+      const original = net.source;
+      expect(net.setSource('nonexistent')).toBe(false);
+      expect(net.source).toBe(original);
     });
   });
 
@@ -256,44 +273,132 @@ describe('FlowNet', () => {
     });
   });
 
-  describe('positions', () => {
-    it('should generate positions for given count', () => {
+  describe('removeNode', () => {
+    it('should remove the node and every edge into or out of it', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      const c = net.addNode();
+      net.connect(net.source, b, 0, 5);
+      net.connect(b, c, 0, 5);
+      net.setNodePosition(b, { x: 1, y: 2 });
+
+      expect(net.removeNode(b)).toBe(true);
+      expect(net.exists(b)).toBe(false);
+      expect(net.nodePositions.has(b)).toBe(false);
+      expect(net.edgeCount()).toBe(0);
+    });
+
+    it('should clear the sink when the sink is removed', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+      net.setSink(b);
+
+      net.removeNode(b);
+      expect(net.sink).toBeNull();
+    });
+
+    it('should not remove the source or a missing node', () => {
+      const net = new FlowNet();
+      expect(net.removeNode(net.source)).toBe(false);
+      expect(net.exists(net.source)).toBe(true);
+      expect(net.removeNode('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('removeEdge', () => {
+    it('should remove only the chosen edge', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+      const c = net.add(net.source, 0, 5);
+
+      expect(net.removeEdge(net.source, b)).toBe(true);
+      expect(net.getEdge(net.source, b)).toBeUndefined();
+      expect(net.getEdge(net.source, c)).toBeDefined();
+      expect(net.exists(b)).toBe(true);
+    });
+
+    it('should return false for a missing edge or node', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      expect(net.removeEdge(net.source, b)).toBe(false);
+      expect(net.removeEdge('nonexistent', b)).toBe(false);
+    });
+  });
+
+  describe('setCapacity', () => {
+    it('should change the capacity of an existing edge', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 0, 5);
+
+      expect(net.setCapacity(net.source, b, 12)).toBe(true);
+      expect(net.getEdge(net.source, b).capacity).toBe(12);
+    });
+
+    it('should return false when the edge does not exist', () => {
+      const net = new FlowNet();
+      const b = net.addNode();
+      expect(net.setCapacity(net.source, b, 12)).toBe(false);
+      expect(net.setCapacity('nonexistent', b, 12)).toBe(false);
+    });
+  });
+
+  describe('clearFlows', () => {
+    it('should set every edge flow back to zero and keep capacities', () => {
+      const net = new FlowNet();
+      const b = net.add(net.source, 3, 10);
+      net.connect(b, net.source, 4, 8);
+
+      net.clearFlows();
+      for (const edge of net.allEdges()) expect(edge.flow).toBe(0);
+      expect(net.getEdge(net.source, b).capacity).toBe(10);
+      expect(net.getEdge(b, net.source).capacity).toBe(8);
+    });
+  });
+
+  describe('setNodePosition', () => {
+    it('should store a position for an existing node', () => {
+      const net = new FlowNet();
+      expect(net.setNodePosition(net.source, { x: 10, y: 20 })).toBe(true);
+      expect(net.nodePositions.get(net.source)).toEqual({ x: 10, y: 20 });
+    });
+
+    it('should return false for a missing node', () => {
+      const net = new FlowNet();
+      expect(net.setNodePosition('nonexistent', { x: 0, y: 0 })).toBe(false);
+      expect(net.nodePositions.size).toBe(0);
+    });
+  });
+
+  describe('layout (cytoscape positions)', () => {
+    it('should give every node numeric coordinates', () => {
       const net = new FlowNet();
       net.add(net.source, 0, 10);
       net.add(net.source, 0, 5);
 
-      const positions = net.positions(3);
-      expect(positions.length).toBe(3);
-
-      positions.forEach(pos => {
-        expect(typeof pos.x).toBe('number');
-        expect(typeof pos.y).toBe('number');
+      const { nodes } = net.cytoscape();
+      expect(nodes.length).toBe(3);
+      nodes.forEach(n => {
+        expect(Number.isFinite(n.x)).toBe(true);
+        expect(Number.isFinite(n.y)).toBe(true);
       });
     });
 
-    it('should spread positions across grid', () => {
+    it('should spread nodes across the grid', () => {
       const net = new FlowNet();
-      const positions = net.positions(9);
+      for (let i = 0; i < 8; i++) net.add(net.source, 0, 1);
 
-      // With 9 nodes, we expect ~3 columns
-      const xValues = positions.map(p => p.x);
-      const yValues = positions.map(p => p.y);
-
-      // Should have variety in both dimensions
-      expect(new Set(xValues).size).toBeGreaterThan(1);
-      expect(new Set(yValues).size).toBeGreaterThan(1);
+      const { nodes } = net.cytoscape();
+      expect(new Set(nodes.map(n => n.x)).size).toBeGreaterThan(1);
+      expect(new Set(nodes.map(n => n.y)).size).toBeGreaterThan(1);
     });
 
-    it('should add random offset to positions', () => {
+    it('should not place two nodes at the same position', () => {
       const net = new FlowNet();
-      const positions1 = net.positions(5);
-      const positions2 = net.positions(5);
+      for (let i = 0; i < 8; i++) net.add(net.source, 0, 1);
 
-      // Positions should be different due to random offset
-      const allDifferent = positions1.every((pos, i) =>
-        pos.x !== positions2[i].x || pos.y !== positions2[i].y
-      );
-      expect(allDifferent).toBe(true);
+      const { nodes } = net.cytoscape();
+      const keys = nodes.map(n => `${n.x},${n.y}`);
+      expect(new Set(keys).size).toBe(keys.length);
     });
   });
 
@@ -327,7 +432,7 @@ describe('FlowNet', () => {
 
     it('should include flow and capacity in edges', () => {
       const net = new FlowNet();
-      const node1 = net.add(net.source, 3, 10);
+      net.add(net.source, 3, 10);
 
       const result = net.cytoscape();
 
@@ -355,15 +460,15 @@ describe('FlowNet', () => {
 
 describe('makeRandomNetwork', () => {
   it('should create network with correct node count', () => {
-    const net = makeRandomNetwork(5, 0.3, 1, 10);
+    const net = makeRandomNetwork(5, 0.3, 1, 10, 1);
     const data = net.cytoscape();
 
     expect(data.nodes.length).toBe(5);
   });
 
   it('should create network with varying densities', () => {
-    const lowDensity = makeRandomNetwork(10, 0.1, 1, 10);
-    const highDensity = makeRandomNetwork(10, 0.5, 1, 10);
+    const lowDensity = makeRandomNetwork(10, 0.1, 1, 10, 1);
+    const highDensity = makeRandomNetwork(10, 0.5, 1, 10, 1);
 
     const lowData = lowDensity.cytoscape();
     const highData = highDensity.cytoscape();
@@ -372,7 +477,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should respect capacity bounds', () => {
-    const net = makeRandomNetwork(5, 0.3, 5, 10);
+    const net = makeRandomNetwork(5, 0.3, 5, 10, 1);
     const data = net.cytoscape();
 
     data.edges.forEach(edge => {
@@ -382,7 +487,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should always set a sink node', () => {
-    const net = makeRandomNetwork(5, 0.3, 1, 10);
+    const net = makeRandomNetwork(5, 0.3, 1, 10, 1);
     expect(net.sink).toBeDefined();
   });
 
@@ -397,9 +502,9 @@ describe('makeRandomNetwork', () => {
       return counter / 100;
     };
 
-    const net1 = makeRandomNetwork(5, 0.3, 1, 10, deterministicRng);
+    const net1 = makeRandomNetwork(5, 0.3, 1, 10, 1, deterministicRng);
     counter = 0;
-    const net2 = makeRandomNetwork(5, 0.3, 1, 10, deterministicRng);
+    const net2 = makeRandomNetwork(5, 0.3, 1, 10, 1, deterministicRng);
 
     const data1 = net1.cytoscape();
     const data2 = net2.cytoscape();
@@ -410,7 +515,7 @@ describe('makeRandomNetwork', () => {
   });
 
   it('should create valid network structure', () => {
-    const net = makeRandomNetwork(8, 0.25, 1, 20);
+    const net = makeRandomNetwork(8, 0.25, 1, 20, 1);
     const data = net.cytoscape();
 
     // All nodes should have unique IDs
@@ -433,7 +538,7 @@ describe('Edge cases and error handling', () => {
   });
 
   it('should handle dense networks', () => {
-    const net = makeRandomNetwork(10, 0.8, 1, 10);
+    const net = makeRandomNetwork(10, 0.8, 1, 10, 1);
     const data = net.cytoscape();
 
     // Dense network should have many edges

@@ -5,8 +5,8 @@ Adds a super source connected to all the sources and a
 super sink connected to all the sinks.
 
 Then runs Edmonds Karp to find the max flow between them.
-The extra edges use the total capacity of the sources and sinks
-so they dont restrict the flow themselves.
+The extra edges have unlimited capacity so they never
+restrict the flow or end up in the min cut.
 
 The artifical nodes and edges arent included in the results.
 */
@@ -27,29 +27,21 @@ export function buildSuperNetwork(network, sources, sinks) {
     copy.list.set(SUPER_SOURCE, new Map());
     copy.list.set(SUPER_SINK, new Map());
 
-    const edges = network.allEdges();
-
     // Connect the super source to each source
     for (const s of sources) {
-        const capacity = edges.filter(e => e.source === s)
-            .reduce((total, e) => total + e.capacity, 0);
-
         copy.list.get(SUPER_SOURCE).set(s, {
             id: `super-source-${s}`,
             flow: 0,
-            capacity
+            capacity: Infinity
         });
     }
 
     // Connect each sink to the super sink
     for (const t of sinks) {
-        const capacity = edges.filter(e => e.target === t)
-            .reduce((total, e) => total + e.capacity, 0);
-
         copy.list.get(t).set(SUPER_SINK, {
             id: `super-sink-${t}`,
             flow: 0,
-            capacity
+            capacity: Infinity
         });
     }
 
@@ -115,8 +107,8 @@ export function multiSourceSinkMaxFlow(network, sources, sinks) {
         bottlenecks,
         bottleneckEdgeIds: bottlenecks.map(b => b.id),
 
-        // Check if the source or sink capacity is limiting the flow
-        limitedByTerminals: cut.cutEdges.some(isArtificialEdge),
+        // the limit is at a source or sink if a cut edge leaves a source or enters a sink
+        limitedByTerminals: bottlenecks.some(b => sources.includes(b.source) || sinks.includes(b.target)),
     };
 }
 

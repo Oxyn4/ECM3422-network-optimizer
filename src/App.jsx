@@ -65,7 +65,7 @@ function downloadJson(net, analysis) {
 
 function App() {
   const [network, setNetwork] = useState(() => makeRandomNetwork())
-  const [revision, setRevision] = useState(0)
+  const [, setRevision] = useState(0)
   const [selection, setSelection] = useState(null) // { kind: 'node' | 'edge', id } or null
   const [highlight, setHighlight] = useState(null)
   const [result, setResult] = useState(null) // last result shown in the Results panel, with a type field
@@ -290,20 +290,51 @@ function App() {
   if (result?.type === 'multi') flowOverride = result.flows
   else if (result?.view === 'after') flowOverride = result.afterFlows
 
+  // the failed node and its edges only exist after the failure, so the before view drops them
+  // edges whose flow changes are picked out in both views
+  let graphHighlight = highlight
+  if (result?.view) {
+    const changedEdgeIds = Object.keys({ ...result.beforeFlows, ...result.afterFlows })
+      .filter((id) => (result.beforeFlows[id] ?? 0) !== (result.afterFlows[id] ?? 0))
+    const failedLayers = result.view === 'after' ? highlight?.layers ?? [] : []
+    graphHighlight = {
+      kind: 'layers',
+      layers: [{ style: 'highlighted', nodeIds: [], edgeIds: changedEdgeIds }, ...failedLayers],
+    }
+  }
+
   return (
     <main className="app">
-      <h1>Network Optimizer</h1>
-      <p>Edmonds-Karp max-flow visualiser</p>
+      <header className="app-header">
+        <h1>Network Optimiser</h1>
+        <span className="app-subtitle">Edmonds-Karp max-flow visualiser</span>
+      </header>
       <div className="workspace">
-        <NetworkGraph
-          network={network.cytoscape()}
-          selection={selection}
-          highlight={highlight}
-          flowOverride={flowOverride}
-          onSelect={setSelection}
-          // moving a node doesn't change the flows, so keep the result
-          onNodeMove={(nodeId, position) => network.setNodePosition(nodeId, position)}
-        />
+        <div className="graph-area">
+          <NetworkGraph
+            network={network.cytoscape()}
+            selection={selection}
+            highlight={graphHighlight}
+            flowOverride={flowOverride}
+            onSelect={setSelection}
+            // moving a node doesn't change the flows, so keep the result
+            onNodeMove={(nodeId, position) => network.setNodePosition(nodeId, position)}
+          />
+          <div className="graph-toolbar" role="toolbar" aria-label="Graph actions">
+            <button type="button" className="primary" onClick={runMaxFlow}>
+              Run max flow
+            </button>
+            <button type="button" onClick={() => runBottlenecks(false)}>
+              Find bottlenecks
+            </button>
+            <button type="button" onClick={rankEdges}>
+              Rank edges
+            </button>
+            <button type="button" className="tertiary" onClick={resetView}>
+              Reset view
+            </button>
+          </div>
+        </div>
         <ControlPanel
           network={network}
           selection={selection}
@@ -347,22 +378,19 @@ function App() {
             setSelection(null)
           }}
           onSetSource={(nodeId) => {
-            network.source = nodeId
-            changeNetwork(network)
+            if (network.setSource(nodeId)) changeNetwork(network)
+            else setError('Unknown node')
           }}
           onSetSink={(nodeId) => {
             if (network.setSink(nodeId)) changeNetwork(network)
             else setError('Unknown node')
           }}
           onSelect={setSelection}
-          onRun={runMaxFlow}
           onFindBottlenecks={runBottlenecks}
           onFailEdge={failEdge}
           onFailNode={failNode}
-          onRankEdges={rankEdges}
           onMultiFlow={runMultiFlow}
           onSetView={setFailureView}
-          onResetView={resetView}
           onHighlight={setHighlight}
           onFlowChanged={flowChanged}
         />

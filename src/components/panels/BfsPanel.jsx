@@ -52,7 +52,7 @@ export function BfsPanel({ network, onHighlight }) {
             <button className="primary" onClick={advanceStep} disabled={step >= trace.length - 1}>
                 Next
             </button>
-            <button className='primary' onClick={reset}>Reset</button>
+            <button className='tertiary' onClick={reset}>Reset</button>
         </section>
     ) : (
         <section>
