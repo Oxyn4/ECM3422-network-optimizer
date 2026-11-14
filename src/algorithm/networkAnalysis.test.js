@@ -319,11 +319,11 @@ describe('Multiple sources and sinks', () => {
         expect(superNet.source).toBe(SUPER_SOURCE);
         expect(superNet.sink).toBe(SUPER_SINK);
 
-        // each link uses the total capacity leaving the source or entering the sink
-        expect(superNet.getEdge(SUPER_SOURCE, 'A').capacity).toBe(4);
-        expect(superNet.getEdge(SUPER_SOURCE, 'B').capacity).toBe(6);
-        expect(superNet.getEdge('D', SUPER_SINK).capacity).toBe(3);
-        expect(superNet.getEdge('E', SUPER_SINK).capacity).toBe(5);
+        // each link has unlimited capacity
+        expect(superNet.getEdge(SUPER_SOURCE, 'A').capacity).toBe(Infinity);
+        expect(superNet.getEdge(SUPER_SOURCE, 'B').capacity).toBe(Infinity);
+        expect(superNet.getEdge('D', SUPER_SINK).capacity).toBe(Infinity);
+        expect(superNet.getEdge('E', SUPER_SINK).capacity).toBe(Infinity);
 
         // the original network is left alone
         expect(net.exists(SUPER_SOURCE)).toBe(false);
@@ -331,14 +331,15 @@ describe('Multiple sources and sinks', () => {
     });
 
     it('says whether the limit is inside the network or at the sources and sinks', () => {
-        // limited by c->d and c->e in the middle
-        expect(multiSourceSinkMaxFlow(multi().net, ['A', 'B'], ['D', 'E']).limitedByTerminals).toBe(false);
+        // limited by c->d and c->e, which both enter a sink
+        expect(multiSourceSinkMaxFlow(multi().net, ['A', 'B'], ['D', 'E']).limitedByTerminals).toBe(true);
 
-        // every edge leaving the only source is full, so the cut is at the source link
-        const { net } = build([['A', 'B', 5], ['B', 'C', 9]], 3, 'C');
+        // every edge leaving the only source is full, so a->b is the bottleneck
+        const { net, ids } = build([['A', 'B', 5], ['B', 'C', 9]], 3, 'C');
         const result = multiSourceSinkMaxFlow(net, ['A'], ['C']);
         expect(result.maxFlow).toBe(5);
         expect(result.limitedByTerminals).toBe(true);
+        expect(result.bottleneckEdgeIds).toEqual([ids['A->B']]);
     });
 
     it('matches single source/sink max flow when given one of each', () => {
