@@ -45,8 +45,8 @@ export class FlowNet {
 
   edgeCount() {
     let total = 0;
-    for (let [key, value] of this.list) {
-      total += value.size;
+    for (const neighbours of this.list.values()) {
+      total += neighbours.size;
     }
     return total;
   }
@@ -242,9 +242,9 @@ export class FlowNet {
   layoutScore(nodeId, pos, placed) {
     let score = this.collisionScore(nodeId, pos, placed)
 
-    for (const [neighbor, neighborPos] of placed) {
-      if (!this.isAdjacent(nodeId, neighbor)) continue
-      score += this.crossingCount(nodeId, pos, neighbor, neighborPos, placed)
+    for (const [neighbour, neighbourPos] of placed) {
+      if (!this.isAdjacent(nodeId, neighbour)) continue
+      score += this.crossingCount(nodeId, pos, neighbour, neighbourPos, placed)
     }
 
     return score
@@ -358,15 +358,15 @@ function bfsDistance(net, start, end) {
 
   while (queue.length > 0) {
     const [current, dist] = queue.shift();
-    const neighbors = net.getConnectedNodes(current);
+    const neighbours = net.getConnectedNodes(current);
 
-    if (!neighbors) continue;
+    if (!neighbours) continue;
 
-    for (const neighbor of neighbors) {
-      if (neighbor === end) return dist + 1;
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push([neighbor, dist + 1]);
+    for (const neighbour of neighbours) {
+      if (neighbour === end) return dist + 1;
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push([neighbour, dist + 1]);
       }
     }
   }

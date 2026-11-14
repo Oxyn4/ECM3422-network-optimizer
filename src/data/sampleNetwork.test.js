@@ -4,7 +4,7 @@ import { FlowNet, makeRandomNetwork } from './sampleNetwork';
 
 describe('FlowNet', () => {
   describe('constructor', () => {
-    it('should initialize with a source node', () => {
+    it('should initialise with a source node', () => {
       const net = new FlowNet();
       expect(net.count()).toBe(1);
       expect(net.source).toBeDefined();
@@ -25,7 +25,7 @@ describe('FlowNet', () => {
       const node1 = net.add(net.source, 0, 10);
       expect(net.count()).toBe(2);
 
-      const node2 = net.add(node1, 0, 5);
+      net.add(node1, 0, 5);
       expect(net.count()).toBe(3);
     });
 
@@ -319,7 +319,7 @@ describe('FlowNet', () => {
 
     it('should include flow and capacity in edges', () => {
       const net = new FlowNet();
-      const node1 = net.add(net.source, 3, 10);
+      net.add(net.source, 3, 10);
 
       const result = net.cytoscape();
 

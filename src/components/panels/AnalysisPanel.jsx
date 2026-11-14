@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HIGHLIGHT_COLORS } from '../NetworkGraph.jsx'
+import { HIGHLIGHT_COLOURS } from '../highlightColours.js'
 import './EdmondsKarpPanel.css'
 
 
@@ -25,7 +25,7 @@ function pathsHighlight(paths, hoverIdx = null) {
         paths: shown.map(([p, i]) => ({
             nodeIds: p.nodeIds,
             edgeIds: p.edgeIds,
-            colorIndex: i % HIGHLIGHT_COLORS.length,
+            colourIndex: i % HIGHLIGHT_COLOURS.length,
             active: hoverIdx !== null,
 
         })),
@@ -62,7 +62,7 @@ function MaxFlowResult({ analysis, onHighlight }) {
                         {paths.map((p, i) => (
                             <li
                                 key={i}
-                                className={`ek-item revealed pc-${i % HIGHLIGHT_COLORS.length}`}
+                                className={`ek-item revealed pc-${i % HIGHLIGHT_COLOURS.length}`}
                                 onMouseEnter={() => onHighlight(pathsHighlight(paths, i))}
                                 onMouseLeave={() => onHighlight(baseHighlight())}
                             >

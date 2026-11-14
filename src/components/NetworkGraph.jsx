@@ -1,16 +1,6 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 import cytoscape from 'cytoscape'
-
-// colors for different active paths or custom  groupings
-export const HIGHLIGHT_COLORS = [
-
-  { line: '#ef4444', node: '#ef4444', border: '#fca5a5' },
-  { line: '#3b82f6', node: '#3b82f6', border: '#93c5fd' },
-  { line: '#22c55e', node: '#22c55e', border: '#86efac' },
-  { line: '#a855f7', node: '#a855f7', border: '#d8b4fe' },
-  { line: '#ec4899', node: '#ec4899', border: '#f9a8d4' },
-  { line: '#14b8a6', node: '#14b8a6', border: '#5eead4' },
-]
+import { HIGHLIGHT_COLOURS } from './highlightColours.js'
 
 // turn highlight instructions into a quick lookup map
 function buildHighlightMap(highlight) {
@@ -19,7 +9,7 @@ function buildHighlightMap(highlight) {
 
   if (highlight.kind === 'paths'){
     for (const path of highlight.paths ?? []) {
-      const idx = (path.colorIndex ?? 0) % HIGHLIGHT_COLORS.length
+      const idx = (path.colourIndex ?? 0) % HIGHLIGHT_COLOURS.length
       for (const id of path.nodeIds ?? []) map.set(`n:${id}`, { idx, active: !!path.active })
       for (const id of path.edgeIds ?? []) map.set(`e:${id}`, { idx, active: !!path.active })
     }
@@ -150,8 +140,8 @@ const style = [
   { selector: 'edge.selected', style: { width: 4, 'line-order': 3, 'line-color': '#2563eb', 'target-arrow-color': '#2563eb' } },
 ]
 
-// dynamically push styles for each highlight color variant
-HIGHLIGHT_COLORS.forEach((c, i) => {
+// dynamically push styles for each highlight colour variant
+HIGHLIGHT_COLOURS.forEach((c, i) => {
   style.push(
     { selector: `node.highlighted-${i}`, style: { 'background-color': c.node, 'border-width': 3, 'border-color': c.border } },
     { selector: `edge.highlighted-${i}`, style: { width: 5, 'line-color': c.line, 'target-arrow-color': c.line } }

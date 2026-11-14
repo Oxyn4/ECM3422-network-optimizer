@@ -17,19 +17,19 @@ export function BFS(network) {
     while (queue.length > 0) {
         const curr = queue.shift();
 
-        const neighbors = network.getConnectedNodes(curr) || [];
+        const neighbours = network.getConnectedNodes(curr) || [];
 
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                const edge = network.list.get(curr).get(neighbor);
-                trace.push({ node: neighbor, edgeId: `edge-${edge.id}` });
+        for (const neighbour of neighbours) {
+            if (!visited.has(neighbour)) {
+                visited.add(neighbour);
+                const edge = network.list.get(curr).get(neighbour);
+                trace.push({ node: neighbour, edgeId: `edge-${edge.id}` });
 
-                if (neighbor === network.sink) {
+                if (neighbour === network.sink) {
                     return trace;
                 }
 
-                queue.push(neighbor);
+                queue.push(neighbour);
             }
         }
     }
@@ -37,13 +37,28 @@ export function BFS(network) {
     return trace;
 }
 
-export function findAugmentingPath(network, flows) {
+// edges coming into each node, so backward edges are found without scanning every node
+function incomingEdges(network) {
+    const incoming = new Map();
+    for (const node of network.list.keys()) incoming.set(node, []);
+
+    for (const [from, outgoing] of network.list) {
+        for (const [to, edge] of outgoing) {
+            incoming.get(to)?.push({ from, edge });
+        }
+    }
+
+    return incoming;
+}
+
+export function findAugmentingPath(network) {
 
     const src = network.source;
     const sink = network.sink;
 
     if (!src || !sink) return null;
 
+    const incoming = incomingEdges(network);
     const visited = new Set();
     const parent = new Map();
     const queue = [];
@@ -53,27 +68,26 @@ export function findAugmentingPath(network, flows) {
 
     while (queue.length > 0) {
         const curr = queue.shift();
-        const neighbors = network.getConnectedNodes(curr) || [];
+        const neighbours = network.getConnectedNodes(curr) || [];
 
-        // forward residual edges: curr -> neighbor with spare capacity
-        for (const neighbor of neighbors) {
-            if (visited.has(neighbor)) continue;
+        // forward residual edges: curr -> neighbour with spare capacity
+        for (const neighbour of neighbours) {
+            if (visited.has(neighbour)) continue;
 
-            const edge = network.list.get(curr).get(neighbor);
+            const edge = network.list.get(curr).get(neighbour);
             if (edge.capacity - edge.flow > 0) {
-                visited.add(neighbor);
-                parent.set(neighbor, { from: curr, type: 'forward', edge });
-                if (neighbor === sink) return buildAugmentingPath(parent, src, sink);
-                queue.push(neighbor);
+                visited.add(neighbour);
+                parent.set(neighbour, { from: curr, type: 'forward', edge });
+                if (neighbour === sink) return buildAugmentingPath(parent, src, sink);
+                queue.push(neighbour);
             }
         }
 
         // backward residual edges: an edge prev -> curr carrying flow can be undone
-        for (const [prev, outgoing] of network.list) {
+        for (const { from: prev, edge: reverseEdge } of incoming.get(curr) ?? []) {
             if (visited.has(prev)) continue;
 
-            const reverseEdge = outgoing.get(curr);
-            if (reverseEdge && reverseEdge.flow > 0) {
+            if (reverseEdge.flow > 0) {
                 visited.add(prev);
                 parent.set(prev, { from: curr, type: 'backward', edge: reverseEdge });
                 if (prev === sink) return buildAugmentingPath(parent, src, sink);
@@ -114,17 +128,16 @@ function buildAugmentingPath(parent, src, sink) {
 }
 
 export function edmondsKarp(network) {
-    const flows = {};
     let maxFlow = 0;
 
     // start from zero flow so repeated runs give the same answer
     network.clearFlows();
 
     while (true) {
-        const result = findAugmentingPath(network, flows);
+        const result = findAugmentingPath(network);
         if (!result) break;
 
-        for (const { from, to, type, edge } of result.path) {
+        for (const { type, edge } of result.path) {
             if (type === 'forward') {
                 edge.flow += result.bottleneck;
             } else {
@@ -164,7 +177,7 @@ export function edmondsKarpTrace(network) {
     let maxFlow = 0;
 
     while (true) {
-        const result = findAugmentingPath(network, {});
+        const result = findAugmentingPath(network);
         if (!result) break;
 
         for (const { type, edge } of result.path) {
